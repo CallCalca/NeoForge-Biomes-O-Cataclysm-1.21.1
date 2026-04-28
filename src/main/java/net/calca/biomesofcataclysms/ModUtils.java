@@ -1,0 +1,129 @@
+package net.calca.biomesofcataclysms;
+
+import net.calca.biomesofcataclysms.data.ModVariables;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
+
+import java.util.Objects;
+
+public class ModUtils {
+    public static void sendChatMessage(ServerLevel level, Component textComponent) {
+        for (ServerPlayer player : level.players()) {
+            player.sendSystemMessage(textComponent);
+        }
+    }
+
+    public static void executeCommandAsEntity(ServerPlayer player, String command){
+        Objects.requireNonNull(player.getServer()).getCommands().performPrefixedCommand(
+                new CommandSourceStack(CommandSource.NULL,
+                        player.position(),
+                        player.getRotationVector(),
+                        player.level() instanceof ServerLevel ? (ServerLevel) player.level() : null, 4,
+                        player.getName().getString(),
+                        player.getDisplayName(),
+                        Objects.requireNonNull(player.level().getServer()),
+                        player),
+                command
+        );
+    }
+
+    public static void sendLocalChatMessageTo(Player player, Component textComponent){
+        if (!player.level().isClientSide())
+            player.displayClientMessage(textComponent, false);
+    }
+
+    public static void sendLocalActionBarMessageTo(Player player, Component textComponent){
+        if (!player.level().isClientSide())
+            player.displayClientMessage(textComponent, true);
+    }
+
+    public static boolean isAGameAlreadyStarted(ModVariables.MapVariables variables){
+        if (variables.tickToNextCataclysm == variables.tickDelayBetweenCataclysm && variables.biomesAffected == 0){
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    public static MutableComponent buildErrorMessage(boolean fatalError, int errorNumber, Component errorPoint, MutableComponent errorDescription){
+        String key;
+        ChatFormatting chatFormatting;
+        if (fatalError){
+            key = "error.biomesofcataclysms.fatalError";
+            chatFormatting = ChatFormatting.RED;
+        }else{
+            key = "error.biomesofcataclysms.somethingWentWrong";
+            chatFormatting = ChatFormatting.GOLD;
+        }
+        return Component.empty()
+                .append(Component.translatable("error.biomesofctataclysms.errorInfo", errorNumber, errorPoint)
+                        .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD))
+                .append(Component.literal(" ")
+                .append(Component.translatable(key)
+                        .withStyle(chatFormatting))
+                        .withStyle(style -> style.withBold(false)))
+                .append(Component.literal("\n"))
+                .append(errorDescription.copy()
+                        .withStyle(style -> style.withColor(ChatFormatting.GRAY).withBold(false)));
+    }
+    public static MutableComponent buildUnknowErrorMessage(){
+        return
+                Component.translatable("error.biomesofctataclysms.somethingWentWrong")
+                        .withStyle(ChatFormatting.DARK_RED)
+                        .append(Component.literal(" "))
+                        .append(Component.translatable("error.biomesofctataclysms.errorInfo", "NULL", "UNKOWN")
+                                .withStyle(ChatFormatting.RED))
+                        .append(Component.literal(" "))
+                        .append(Component.translatable("error.biomesofctataclysms.unknow")
+                                .withStyle(ChatFormatting.YELLOW));
+
+    }
+
+    public static MutableComponent buildWarningMessage(boolean criticalWarning, Component targetPoint, MutableComponent errorDescription){
+        String key;
+        ChatFormatting chatFormatting;
+        if (criticalWarning){
+            key = "error.biomesofcataclysms.criticalWarning";
+            chatFormatting = ChatFormatting.GOLD;
+        }else{
+            key = "error.biomesofcataclysms.warning";
+            chatFormatting = ChatFormatting.YELLOW;
+        }
+        return Component.empty()
+                .append(Component.translatable(key, targetPoint)
+                        .withStyle(chatFormatting, ChatFormatting.BOLD))
+                .append(Component.literal("\n"))
+                .append(errorDescription.copy()
+                        .withStyle(style -> style.withColor(ChatFormatting.GRAY).withBold(false)));
+    }
+
+    public static void playLocalErrorSound(Player player){
+        player.playNotifySound(
+                SoundEvents.BEACON_DEACTIVATE, // suono
+                SoundSource.MASTER,                 // categoria audio
+                1F,                               // volume
+                0.4F                                // pitch
+        );
+
+    }
+    public static void playLocalBiomeAffectedSound(Player player){
+        player.playNotifySound(
+                SoundEvents.WITHER_DEATH,
+                SoundSource.MASTER,
+                0.6F,
+                0.6F
+        );
+
+    }
+
+
+
+}

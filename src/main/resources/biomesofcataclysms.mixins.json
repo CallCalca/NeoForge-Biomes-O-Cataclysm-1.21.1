@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.calca.biomesofcataclysms.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "ChunkMapAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
