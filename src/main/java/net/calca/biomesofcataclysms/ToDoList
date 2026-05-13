@@ -1,1 +1,16 @@
-1. Fix timer: 1 biome every X minutes its bugged!
+
+6. Creare la translation delle lingue
+7. Traduzione per DELAY BETWEEN CATACLYSMS SET TO 1 MIN
+
+Futuro:
+0. Implementare la funzione di recupero dati.
+1. Aumentare la qualità dei suoni (facendoli essere sul giocatore per l'intera durata).
+2. Poter escludere dei biomi dalla partita
+3. Poter forzare il prossimo bioma
+4. Modalità: Sguardo di Medusa (trasforma tutto in bedrock)
+5. Modalità: Sculk eterno (Il bioma è maledetto dallo sculk: uccidere un mod lo trasfroma nella varainte di sculk (gli cambio la texture) e divent aggressivo molto forte
+                    . Se vengono lasciati stare per un periodo abbastanza lungo (un po come il warked) si sepelliscono e si trasfromano in un cataluist
+                        che diffonde tantissimo sculk intorno a diversi chunk dal Catalyst. Può spawnare il warden ).
+6. Mostra una barra del boss sopra la testa se ci si trova in un bioma colpito, mostrando quanto manca ai vari stage
+
+- Analizzare completamente tutto il codice e commentarlo

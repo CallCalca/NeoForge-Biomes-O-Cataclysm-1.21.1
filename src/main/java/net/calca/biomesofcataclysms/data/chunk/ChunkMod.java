@@ -20,6 +20,10 @@ public class ChunkMod {
     public final ResourceKey<Level> dimension;
     public final ChunkPos pos;
     public Set<String> biomeIds = new HashSet<>();
+    public Set<String> clearedBiomes = new HashSet<>();
+    public String activeBiome = null;
+    public int activeBiomeStep = 0;
+    public int lastFloodHeight = -64;
 
     public boolean initialWave;   // fa parte dell'onda iniziale
     public boolean dynamic;       // scoperto dal radar
@@ -53,17 +57,13 @@ public class ChunkMod {
 
         int minY = level.getMinBuildHeight();
         int maxY = level.getMaxBuildHeight();
-        int stepY = 8; // puoi mettere 4 se vuoi più precisione, ma costa di più
 
         int minX = pos.getMinBlockX();
         int minZ = pos.getMinBlockZ();
 
-        int[] sampleX = {4, 8, 12};
-        int[] sampleZ = {4, 8, 12};
-
-        for (int xOff : sampleX) {
-            for (int zOff : sampleZ) {
-                for (int y = minY; y < maxY; y += stepY) {
+        for (int xOff = 0; xOff < 16; xOff += 2) {
+            for (int zOff = 0; zOff < 16; zOff += 2) {
+                for (int y = minY; y < maxY; y += 4) {
                     BlockPos samplePos = new BlockPos(minX + xOff, y, minZ + zOff);
 
                     level.getBiome(samplePos).unwrapKey().ifPresent(key -> {
@@ -79,26 +79,73 @@ public class ChunkMod {
     public CompoundTag save(HolderLookup.Provider provider) {
         CompoundTag tag = new CompoundTag();
 
+        Set<String> biomeIdsCopy;
+        Set<String> clearedBiomesCopy;
+        String activeBiomeCopy;
+        int activeBiomeStepCopy;
+        int lastFloodHeightCopy;
+        boolean initialWaveCopy;
+        boolean dynamicCopy;
+        boolean instantCopy;
+        long firstSeenTickCopy;
+        long readyAtTickCopy;
+        int speedTierCopy;
+        ChunkState stateCopy;
+        int stepCopy;
+        long lastSeenTickCopy;
+        double priorityScoreCopy;
+
+        synchronized (this) {
+            biomeIdsCopy = new HashSet<>(biomeIds);
+            clearedBiomesCopy = new HashSet<>(clearedBiomes);
+            activeBiomeCopy = activeBiome;
+            activeBiomeStepCopy = activeBiomeStep;
+            lastFloodHeightCopy = lastFloodHeight;
+            initialWaveCopy = initialWave;
+            dynamicCopy = dynamic;
+            instantCopy = instant;
+            firstSeenTickCopy = firstSeenTick;
+            readyAtTickCopy = readyAtTick;
+            speedTierCopy = speedTier;
+            stateCopy = state;
+            stepCopy = step;
+            lastSeenTickCopy = lastSeenTick;
+            priorityScoreCopy = priorityScore;
+        }
+
         tag.putString("dimension", dimension.location().toString());
         tag.putLong("chunkPos", pos.toLong());
 
         ListTag biomeList = new ListTag();
-        for (String biome : new HashSet<>(biomeIds)) {
+        for (String biome : biomeIdsCopy) {
             biomeList.add(StringTag.valueOf(biome));
         }
         tag.put("biomeIds", biomeList);
 
-        tag.putBoolean("initialWave", initialWave);
-        tag.putBoolean("dynamic", dynamic);
-        tag.putBoolean("instant", instant);
+        ListTag clearedList = new ListTag();
+        for (String biome : clearedBiomesCopy) {
+            clearedList.add(StringTag.valueOf(biome));
+        }
+        tag.put("clearedBiomes", clearedList);
 
-        tag.putLong("firstSeenTick", firstSeenTick);
-        tag.putLong("readyAtTick", readyAtTick);
-        tag.putInt("speedTier", speedTier);
-        tag.putString("state", state.name());
-        tag.putInt("step", step);
-        tag.putLong("lastSeenTick", lastSeenTick);
-        tag.putDouble("priorityScore", priorityScore);
+        tag.putBoolean("hasActiveBiome", activeBiomeCopy != null);
+        if (activeBiomeCopy != null) {
+            tag.putString("activeBiome", activeBiomeCopy);
+        }
+
+        tag.putInt("activeBiomeStep", activeBiomeStepCopy);
+        tag.putInt("lastFloodHeight", lastFloodHeightCopy);
+        tag.putBoolean("initialWave", initialWaveCopy);
+        tag.putBoolean("dynamic", dynamicCopy);
+        tag.putBoolean("instant", instantCopy);
+
+        tag.putLong("firstSeenTick", firstSeenTickCopy);
+        tag.putLong("readyAtTick", readyAtTickCopy);
+        tag.putInt("speedTier", speedTierCopy);
+        tag.putString("state", stateCopy.name());
+        tag.putInt("step", stepCopy);
+        tag.putLong("lastSeenTick", lastSeenTickCopy);
+        tag.putDouble("priorityScore", priorityScoreCopy);
 
         return tag;
     }
@@ -114,11 +161,21 @@ public class ChunkMod {
         ChunkMod mod = new ChunkMod(dimension, pos);
 
         mod.biomeIds.clear();
-        ListTag biomes = tag.getList("biomeIds", Tag.TAG_STRING);
-        for (int i = 0; i < biomes.size(); i++) {
-            mod.biomeIds.add(biomes.getString(i));
+        ListTag biomeIdsList = tag.getList("biomeIds", Tag.TAG_STRING);
+        for (int i = 0; i < biomeIdsList.size(); i++) {
+            mod.biomeIds.add(biomeIdsList.getString(i));
         }
 
+        mod.clearedBiomes.clear();
+        ListTag clearedBiomesList = tag.getList("clearedBiomes", Tag.TAG_STRING);
+        for (int i = 0; i < clearedBiomesList.size(); i++) {
+            mod.clearedBiomes.add(clearedBiomesList.getString(i));
+        }
+
+        mod.activeBiome = tag.getBoolean("hasActiveBiome") ? tag.getString("activeBiome") : null;
+
+        mod.activeBiomeStep = tag.getInt("activeBiomeStep");
+        mod.lastFloodHeight = tag.getInt("lastFloodHeight");
         mod.initialWave = tag.getBoolean("initialWave");
         mod.dynamic = tag.getBoolean("dynamic");
         mod.instant = tag.getBoolean("instant");
@@ -126,7 +183,10 @@ public class ChunkMod {
         mod.firstSeenTick = tag.getLong("firstSeenTick");
         mod.readyAtTick = tag.getLong("readyAtTick");
         mod.speedTier = tag.getInt("speedTier");
-        mod.state = ChunkState.valueOf(tag.getString("state"));
+
+        String stateName = tag.getString("state");
+        mod.state = stateName.isEmpty() ? ChunkState.QUEUED : ChunkState.valueOf(stateName);
+
         mod.step = tag.getInt("step");
         mod.lastSeenTick = tag.getLong("lastSeenTick");
         mod.priorityScore = tag.getDouble("priorityScore");

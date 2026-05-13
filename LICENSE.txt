@@ -1,0 +1,35 @@
+<ARR LICENSE — ALL RIGHTS RESERVED
+
+Copyright (c) [2026] [CallaCalca / Biomes O' Cataclysms]
+
+This Mod, including without limitation its source code, compiled code, configuration files, texts, names, trademarks, icons,
+textures, images, graphics, models, animations, audio assets, and any other materials or assets associated with it,
+is made available exclusively under the terms of this ARR (All Rights Reserved) license.
+All rights not expressly granted herein are fully reserved by the rights' holder.
+
+It is strictly prohibited, without prior written permission from the rights holder, to copy, modify, distribute, redistribute,
+sell, resell, transfer, publish, upload, incorporate, or otherwise use the Mod, in whole or in part, as well as any element
+associated with it, in other projects, software, mods, modpacks, derivative works, or any other content.
+This restriction applies to all creative and technical elements belonging to or derived from the Mod, including but not limited to icons,
+textures, graphics, internal files, descriptions, logos, names, texts, sounds, models, and animations.
+No part of the Mod may be considered public domain, freely reusable, or open source unless explicitly authorized in writing by the rights' holder.
+
+The inclusion of the Mod within modpacks is permitted, provided that such modpacks are distributed free of charge and are not subject
+to any form of payment, monetization, or paid access for distribution. In all cases, the Mod may not be extracted, separated, sold, or
+redistributed as a standalone product, nor may any references to this license be removed or altered.
+
+The Mod may also be used in videos, livestreams, gameplay content, reviews, tutorials, and similar audiovisual works,
+including those monetized through standard platform monetization features, provided that such use does not involve unauthorized
+redistribution of the Mod or its assets and does not imply ownership or authorship by any party other than the rights holder.
+Attribution of the Mod or its author is not required for such uses, although it is appreciated.
+
+Use of the Mod constitutes full acceptance of the terms of this license. Any use not expressly permitted herein is strictly prohibited.
+
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

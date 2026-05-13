@@ -2,6 +2,8 @@ package net.calca.biomesofcataclysms.data;
 
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
+import net.calca.biomesofcataclysms.ModUtils;
+import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.data.chunk.ChunkMod;
 import net.calca.biomesofcataclysms.data.chunk.ChunkState;
 import net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager;
@@ -15,6 +17,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -79,6 +82,9 @@ public class ModVariables {
         }
     }
 
+
+
+
     public static class WorldVariables extends SavedData {
         public static final String DATA_NAME = "biomesofcataclysm_worldvars";
 
@@ -125,15 +131,26 @@ public class ModVariables {
 
         public final Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> initialStates = new HashMap<>();
         public final Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> dynamicStates = new HashMap<>();
+        public final Map<String, Integer> floodedHeights = new HashMap<>();
+        public final Map<String, Long> sunBurnStartTicks = new HashMap<>();
 
-
+        public boolean debugMode = false;
+        public boolean graceCheckHappen = true;
+        public boolean allNetherBiomesHitShouldNotify = true;
+        public boolean allEndBiomesHitShouldNotify = true;
+        public boolean allOverworldBiomesHitShouldNotify = true;
         public int totalBiomes = 0;
         public List<String> shuffledBiomes = new ArrayList<>(); // Coda dei prossimi biomi
+        public List<String> overworldBiomeList = new ArrayList<>(); // Coda dei prossimi biomi
         public Set<String> deletedBiomes = new HashSet<>();    // Registro dei biomi già cancellati
         public Set<String> processedChunks = new HashSet<>();
 
         public int biomesToAffect = totalBiomes;
         public int biomesAffected = 0;
+
+        public int pcPower = 1;
+        public int radius = 16;
+        public double destructionSpeed = 1;
 
         public int mode = 0; //0 = Biom Remover: chunks of a given biome will get completely deleted;
                             // 1 = Apocalypse: random disasters will affect all chunks of a given biome.
@@ -145,20 +162,15 @@ public class ModVariables {
         //3 = Impossible:     disaster will "as fast as possible" affect chucks, The warning arrives 10 seconds before cataclysm, biome + cataclysm are hidden
         //4 = Hardcore:       disaster will "as fast as possible" affect chucks, No warning, biome + cataclysm are hidden
 
-        public int tickDelayBetweenCataclysm = 600; // 6000 = 5 minutes default
+        public int tickDelayBetweenCataclysm = 5*60*20; // 6000 = 5 minutes default
         public int timer = -1;//When -1 timer is disabled
         public int state = 0; //0 = paused; 1 = paused (to confirm); 2 = playing;
         public int dataCondition = 0; //0 = data is fine; 1 = data is corrupted; -1 = data needs to be analyzed;
 
         public String nextBiomeToAffect = "None";
-        public String cataclysm = "Destroyed";
+        public String cataclysm = "NULL";
         public int tickToNextCataclysm = tickDelayBetweenCataclysm;
         public int gracePeriod = 0;
-
-        public static final String[] possibleCataclysm = {
-                Component.translatable("possibleCataclysm.biomesofctataclysms.flooded").toString(),
-                Component.translatable("possibleCataclysm.biomesofctataclysms.sun_burnt").toString()
-        };
 
         public static MapVariables load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
             MapVariables data = new MapVariables();
@@ -193,11 +205,35 @@ public class ModVariables {
                 chunks.put(dim, dimChunks);
             }
 
+            // --- Caricamento Flooded Heights ---
+            floodedHeights.clear();
+            if (nbt.contains("floodedHeights", Tag.TAG_COMPOUND)) {
+                CompoundTag floodedTag = nbt.getCompound("floodedHeights");
+                for (String biomeId : floodedTag.getAllKeys()) {
+                    floodedHeights.put(biomeId, floodedTag.getInt(biomeId));
+                }
+            }
+
+            // --- Caricamento Sun Burn Start Ticks ---
+            sunBurnStartTicks.clear();
+            if (nbt.contains("sunBurnStartTicks", Tag.TAG_COMPOUND)) {
+                CompoundTag sunBurnTag = nbt.getCompound("sunBurnStartTicks");
+                for (String biomeId : sunBurnTag.getAllKeys()) {
+                    sunBurnStartTicks.put(biomeId, sunBurnTag.getLong(biomeId));
+                }
+            }
+
             // --- Caricamento Shuffled Biomes ---
             shuffledBiomes.clear();
             ListTag shuffledList = nbt.getList("shuffledBiomes", Tag.TAG_STRING);
             for (int i = 0; i < shuffledList.size(); i++) {
                 shuffledBiomes.add(shuffledList.getString(i));
+            }
+
+            overworldBiomeList.clear();
+            ListTag overworldBiomeListList = nbt.getList("overworldBiomeList", Tag.TAG_STRING);
+            for (int i = 0; i < overworldBiomeListList.size(); i++) {
+                overworldBiomeList.add(overworldBiomeListList.getString(i));
             }
 
             // --- Caricamento Deleted Biomes ---
@@ -211,8 +247,16 @@ public class ModVariables {
             for (int i = 0; i < processedList.size(); i++) processedChunks.add(processedList.getString(i));
 
             totalBiomes = nbt.getInt("totalBiomes");
+            graceCheckHappen = nbt.getBoolean("graceCheckHappen");
+            debugMode = nbt.getBoolean("debugMode");
+            allNetherBiomesHitShouldNotify = nbt.getBoolean("allNetherBiomesHitShouldNotify");
+            allEndBiomesHitShouldNotify = nbt.getBoolean("allEndBiomesHitShouldNotify");
+            allOverworldBiomesHitShouldNotify = nbt.getBoolean("allOverworldBiomesHitShouldNotify");
             biomesToAffect = nbt.getInt("biomesToAffect");
             biomesAffected = nbt.getInt("biomesAffected");
+            pcPower = nbt.getInt("pcPower");
+            radius = nbt.getInt("radius");
+            destructionSpeed = nbt.getDouble("destructionSpeed");
             mode = nbt.getInt("mode");
             difficulty = nbt.getInt("difficulty");
             tickDelayBetweenCataclysm = nbt.getInt("tickDelayBetweenCataclysm");
@@ -228,11 +272,70 @@ public class ModVariables {
 
         @Override
         public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
-            Map<ResourceKey<Level>, Map<Long, ChunkMod>> chunksCopy = new HashMap<>();
-            for (var e : chunks.entrySet()) {
-                chunksCopy.put(e.getKey(), new HashMap<>(e.getValue()));
+
+            Map<ResourceKey<Level>, Map<Long, ChunkMod>> chunksCopy;
+            Map<ResourceKey<Level>, ArrayDeque<Long>> initialOrderCopy;
+            Map<ResourceKey<Level>, ArrayDeque<Long>> dynamicOrderCopy;
+            Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> initialStatesCopy;
+            Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> dynamicStatesCopy;
+            Map<String, Integer> floodedHeightsCopy;
+            Map<String, Long> sunBurnStartTicksCopy;
+
+            List<String> shuffledBiomesCopy;
+            List<String> overworldBiomeListCopy;
+            Set<String> deletedBiomesCopy;
+            Set<String> processedChunksCopy;
+
+            // 🔒 SNAPSHOT SICURO (NO CONCURRENT MODIFICATION)
+            synchronized (this) {
+
+                chunksCopy = new HashMap<>();
+                for (var e : chunks.entrySet()) {
+                    chunksCopy.put(e.getKey(), new HashMap<>(e.getValue()));
+                }
+
+                initialOrderCopy = new HashMap<>();
+                for (var e : initialOrder.entrySet()) {
+                    initialOrderCopy.put(e.getKey(), new ArrayDeque<>(e.getValue()));
+                }
+
+                dynamicOrderCopy = new HashMap<>();
+                for (var e : dynamicOrder.entrySet()) {
+                    dynamicOrderCopy.put(e.getKey(), new ArrayDeque<>(e.getValue()));
+                }
+
+                initialStatesCopy = new HashMap<>(initialStates);
+                dynamicStatesCopy = new HashMap<>(dynamicStates);
+                floodedHeightsCopy = new HashMap<>(floodedHeights);
+                sunBurnStartTicksCopy = new HashMap<>(sunBurnStartTicks);
+
+                // 🔥 COPIA MANUALE SICURA (FIX DEFINITIVO)
+                shuffledBiomesCopy = new ArrayList<>();
+                for (String s : shuffledBiomes) {
+                    shuffledBiomesCopy.add(s);
+                }
+
+                overworldBiomeListCopy = new ArrayList<>();
+                for (String s : overworldBiomeList) {
+                    overworldBiomeListCopy.add(s);
+                }
+
+                deletedBiomesCopy = new HashSet<>();
+                for (String s : deletedBiomes) {
+                    deletedBiomesCopy.add(s);
+                }
+
+                processedChunksCopy = new HashSet<>();
+                for (String s : processedChunks) {
+                    processedChunksCopy.add(s);
+                }
             }
+
+            // =========================
+            // CHUNKS
+            // =========================
             CompoundTag chunksRoot = new CompoundTag();
+
             for (var dimEntry : chunksCopy.entrySet()) {
                 CompoundTag dimTag = new CompoundTag();
                 ListTag chunksList = new ListTag();
@@ -242,39 +345,85 @@ public class ModVariables {
                     chunkTag.putLong("packedPos", chunkEntry.getKey());
                     chunksList.add(chunkTag);
                 }
+
                 dimTag.put("chunks", chunksList);
                 chunksRoot.put(dimEntry.getKey().location().toString(), dimTag);
             }
             nbt.put("chunksRoot", chunksRoot);
 
-            writeLongDequeMap(nbt, "initialOrder", initialOrder);
-            writeLongDequeMap(nbt, "dynamicOrder", dynamicOrder);
-            writeStateMap(nbt, "initialStates", initialStates);
-            writeStateMap(nbt, "dynamicStates", dynamicStates);
 
-            // --- Salvataggio Shuffled Biomes ---
+            CompoundTag floodedHeightsTag = new CompoundTag();
+            for (var entry : floodedHeightsCopy.entrySet()) {
+                floodedHeightsTag.putInt(entry.getKey(), entry.getValue());
+            }
+            nbt.put("floodedHeights", floodedHeightsTag);
+
+            CompoundTag sunBurnStartTicksTag = new CompoundTag();
+            for (var entry : sunBurnStartTicksCopy.entrySet()) {
+                sunBurnStartTicksTag.putLong(entry.getKey(), entry.getValue());
+            }
+            nbt.put("sunBurnStartTicks", sunBurnStartTicksTag);
+
+
+            // =========================
+            // MAPPE ORDINI / STATES
+            // =========================
+            writeLongDequeMap(nbt, "initialOrder", initialOrderCopy);
+            writeLongDequeMap(nbt, "dynamicOrder", dynamicOrderCopy);
+            writeStateMap(nbt, "initialStates", initialStatesCopy);
+            writeStateMap(nbt, "dynamicStates", dynamicStatesCopy);
+
+            // =========================
+            // LISTE
+            // =========================
             ListTag shuffledTag = new ListTag();
-            for (String b : shuffledBiomes) shuffledTag.add(StringTag.valueOf(b));
+            for (String b : shuffledBiomesCopy) {
+                shuffledTag.add(StringTag.valueOf(b));
+            }
             nbt.put("shuffledBiomes", shuffledTag);
 
-            // --- Salvataggio Deleted Biomes ---
+            ListTag overworldBiomeListTag = new ListTag();
+            for (String b : overworldBiomeListCopy) {
+                overworldBiomeListTag.add(StringTag.valueOf(b));
+            }
+            nbt.put("overworldBiomeList", overworldBiomeListTag);
+
             ListTag deletedTag = new ListTag();
-            for (String b : deletedBiomes) deletedTag.add(StringTag.valueOf(b));
+            for (String b : deletedBiomesCopy) {
+                deletedTag.add(StringTag.valueOf(b));
+            }
             nbt.put("deletedBiomes", deletedTag);
 
             ListTag processedTag = new ListTag();
-            for (String s : processedChunks) processedTag.add(StringTag.valueOf(s));
+            for (String s : processedChunksCopy) {
+                processedTag.add(StringTag.valueOf(s));
+            }
             nbt.put("processedChunks", processedTag);
 
+            // =========================
+            // PRIMITIVI
+            // =========================
             nbt.putInt("totalBiomes", totalBiomes);
+            nbt.putBoolean("graceCheckHappen", graceCheckHappen);
+            nbt.putBoolean("debugMode", debugMode);
+            nbt.putBoolean("allNetherBiomesHitShouldNotify", allNetherBiomesHitShouldNotify);
+            nbt.putBoolean("allEndBiomesHitShouldNotify", allEndBiomesHitShouldNotify);
+            nbt.putBoolean("allOverworldBiomesHitShouldNotify", allOverworldBiomesHitShouldNotify);
+
             nbt.putInt("biomesToAffect", biomesToAffect);
             nbt.putInt("biomesAffected", biomesAffected);
+            nbt.putInt("pcPower", pcPower);
+            nbt.putInt("radius", radius);
+            nbt.putDouble("destructionSpeed", destructionSpeed);
+
             nbt.putInt("mode", mode);
             nbt.putInt("difficulty", difficulty);
+
             nbt.putInt("tickDelayBetweenCataclysm", tickDelayBetweenCataclysm);
             nbt.putInt("timer", timer);
             nbt.putInt("state", state);
             nbt.putInt("dataCondition", dataCondition);
+
             nbt.putInt("tickToNextCataclysm", tickToNextCataclysm);
             nbt.putInt("gracePeriod", gracePeriod);
 
@@ -283,18 +432,42 @@ public class ModVariables {
 
             return nbt;
         }
+
         public void generateFullBiomeList(ServerLevel level) {
             Registry<Biome> registry = level.registryAccess().registryOrThrow(Registries.BIOME);
             this.shuffledBiomes = registry.keySet().stream()
                     .map(ResourceLocation::toString)
-                    .filter(id -> !id.contains("minecraft:empty")) // Evitiamo biomi nulli
+                    .filter(id -> !id.contains(Biomes.THE_VOID.location().toString())) // Evitiamo biomi nulli
                     .collect(Collectors.toList());
 
             Collections.shuffle(this.shuffledBiomes);
             this.totalBiomes = shuffledBiomes.size();
-            if (!shuffledBiomes.isEmpty()) this.nextBiomeToAffect = this.shuffledBiomes.get(0);
+            if (!shuffledBiomes.isEmpty()){
+                this.nextBiomeToAffect = this.shuffledBiomes.get(0);
+                buildOverworldBiomesList();
+            }
             this.syncData(level);
         }
+        private void buildOverworldBiomesList() {
+            overworldBiomeList.clear();
+            overworldBiomeList.addAll(shuffledBiomes);
+            overworldBiomeList.removeIf(id ->
+                    id.equals(Biomes.THE_VOID.location().toString())
+
+                            || id.startsWith(Biomes.NETHER_WASTES.location().toString())
+                            || id.startsWith(Biomes.SOUL_SAND_VALLEY.location().toString())
+                            || id.startsWith(Biomes.BASALT_DELTAS.location().toString())
+                            || id.startsWith(Biomes.CRIMSON_FOREST.location().toString())
+                            || id.startsWith(Biomes.WARPED_FOREST.location().toString())
+
+                            || id.startsWith(Biomes.END_HIGHLANDS.location().toString())
+                            || id.startsWith(Biomes.THE_END.location().toString())
+                            || id.startsWith(Biomes.END_MIDLANDS.location().toString())
+                            || id.startsWith(Biomes.END_BARRENS.location().toString())
+                            || id.startsWith(Biomes.SMALL_END_ISLANDS.location().toString())
+            );
+        }
+
         public void selectNextBiomeGlobal(MinecraftServer server) {
             if (this.shuffledBiomes.isEmpty()) return;
 
@@ -307,7 +480,7 @@ public class ModVariables {
             }
 
             // TRIGGER IMMEDIATO: Inizia subito a scansionare per evitare il lag di 30s
-            if (difficulty < 4){ //If chunk destruction DOESNT start on player pos
+            if (difficulty < 4 && mode != 1){ //If chunk destruction DOESNT start on player pos
                 for (ServerLevel level : server.getAllLevels()) {
                     scanAndQueueChunks(level, targetBiomeId, true); // true = priorità alta (onda)
                 }
@@ -315,16 +488,48 @@ public class ModVariables {
 
             this.setDirty();
         }
+        public void forceNextBiome(String targetBiomeId, ServerLevel level) {
+            int index = this.shuffledBiomes.indexOf(targetBiomeId);
+
+            // LOG DI DEBUG: Controlliamo cosa sta succedendo in console
+            System.out.println("Cerco di forzare: " + targetBiomeId + ". Trovato all'indice: " + index);
+
+            if (index == -1) {
+                // Il bioma non è nella lista (forse è già stato eliminato o il nome è sbagliato)
+                if (this.deletedBiomes.contains(targetBiomeId)) {
+                    BiomesOfCataclysms.LOGGER.warn("Impossibile forzare: " + targetBiomeId + " è già stato eliminato!");
+                } else {
+                    BiomesOfCataclysms.LOGGER.error("Errore: " + targetBiomeId + " non esiste nella lista dei biomi!");
+                }
+                return;
+            }
+
+            if (index > 0) {
+                // Eseguiamo lo scambio solo se non è già al primo posto
+                String currentFirst = this.shuffledBiomes.getFirst();
+                this.shuffledBiomes.set(0, targetBiomeId);
+                this.shuffledBiomes.set(index, currentFirst);
+                BiomesOfCataclysms.LOGGER.info("Swap eseguito: " + targetBiomeId + " ora è il prossimo.");
+            }
+
+            // Aggiorniamo SEMPRE il puntatore del display e sincronizziamo
+            this.nextBiomeToAffect = targetBiomeId;
+            this.syncData(level);
+        }
 
         // Aggiorna anche scanContinuous per usare la logica a onda più leggera
         // Sostituisci questo metodo in MapVariables
         public void scanContinuous(ServerLevel level) {
             if (this.deletedBiomes.isEmpty()) return;
+            List<ServerPlayer> players = level.players().stream()
+                    .filter(p -> !p.isSpectator())
+                    .toList();
+            if (players.isEmpty()) return;
 
-            int radius = 16;
+            int radius = this.radius;
             String dimKey = level.dimension().location().toString();
 
-            for (ServerPlayer player : level.players()) {
+            for (ServerPlayer player : players) {
                 ChunkPos playerChunk = new ChunkPos(player.blockPosition());
 
                 for (int x = -radius; x <= radius; x++) {
@@ -355,50 +560,54 @@ public class ModVariables {
 
                         if (!needsDynamic) continue;
 
+                        // -------------------------
+
                         this.setDirty();
                         DeletionQueueManager.registerDynamicChunk(level, targetPos);
                     }
                 }
+
             }
         }
         private void scanAndQueueChunks(ServerLevel level, String targetBiomeId, boolean priority) {
-            int radius = 16;
-            List<ChunkPos> foundChunks = new ArrayList<>();
-            List<ServerPlayer> players = level.players();
-
+            List<ServerPlayer> players = level.players().stream()
+                    .filter(p -> !p.isSpectator())
+                    .toList();
             if (players.isEmpty()) return;
+
+            int radius = this.radius;
+            List<ChunkPos> foundChunks = new ArrayList<>();
+            Set<Long> foundKeys = new HashSet<>();
 
             for (ServerPlayer player : players) {
                 ChunkPos playerChunk = new ChunkPos(player.blockPosition());
+
                 for (int x = -radius; x <= radius; x++) {
                     for (int z = -radius; z <= radius; z++) {
                         ChunkPos targetPos = new ChunkPos(playerChunk.x + x, playerChunk.z + z);
 
-                        // Controlliamo se il chunk esiste e non è già vuoto
-                        if (level.hasChunk(targetPos.x, targetPos.z)) {
-                            Holder<Biome> biomeAtPos = level.getBiome(targetPos.getMiddleBlockPosition(64));
-                            if (biomeAtPos.unwrapKey().isPresent() &&
-                                    biomeAtPos.unwrapKey().get().location().toString().equals(targetBiomeId)) {
+                        if (!level.hasChunk(targetPos.x, targetPos.z)) continue;
 
-                                // Aggiungiamo solo se non è già stato processato
-                                if (!foundChunks.contains(targetPos)) {
-                                    foundChunks.add(targetPos);
-                                }
-                            }
+                        long packed = targetPos.toLong();
+                        if (!foundKeys.add(packed)) continue;
+
+                        ChunkMod mod = DeletionQueueManager.getOrCreateChunkMod(level, targetPos);
+
+                        if (mod.biomeIds.contains(targetBiomeId)) {
+                            foundChunks.add(targetPos);
                         }
                     }
                 }
             }
 
-            if (this.difficulty == 0 || this.difficulty == 1){
+            if (this.difficulty == 0 || this.difficulty == 1) {
                 surroundingChunkDestruction(foundChunks, players, level);
             } else if (this.difficulty == 2) {
                 randomChunkDestruction(foundChunks, level);
-            } else if (this.difficulty == 3 || this .difficulty == 4) {
+            } else if (this.difficulty == 3 || this.difficulty == 4) {
                 instantDestruction(foundChunks, players, level);
             }
 
-            // Inseriamo nella coda principale
             for (ChunkPos pos : foundChunks) {
                 if (priority) {
                     DeletionQueueManager.registerDynamicChunk(level, pos);
@@ -459,48 +668,52 @@ public class ModVariables {
             }
         }
 
-        public void syncDataGlobal() {
+        public int getFloodHeight(String biomeId, ServerLevel level) {
+            return floodedHeights.getOrDefault(biomeId, level.getMinBuildHeight());
+        }
+        public void startFloodForBiome(String biomeId, ServerLevel level) {
+            floodedHeights.putIfAbsent(biomeId, level.getMinBuildHeight());
             this.setDirty();
-            // Invia il pacchetto a chiunque sia connesso, ovunque si trovi
-            PacketDistributor.sendToAllPlayers(new SavedDataSyncMessage(0, this));
         }
+        public boolean tickFloodHeights(ServerLevel level) {
+            if (level.getGameTime() % 20 != 0) return false;
 
-        public void forceNextBiome(String targetBiomeId, ServerLevel level) {
-            int index = this.shuffledBiomes.indexOf(targetBiomeId);
-
-            // LOG DI DEBUG: Controlliamo cosa sta succedendo in console
-            System.out.println("Cerco di forzare: " + targetBiomeId + ". Trovato all'indice: " + index);
-
-            if (index == -1) {
-                // Il bioma non è nella lista (forse è già stato eliminato o il nome è sbagliato)
-                if (this.deletedBiomes.contains(targetBiomeId)) {
-                    BiomesOfCataclysms.LOGGER.warn("Impossibile forzare: " + targetBiomeId + " è già stato eliminato!");
-                } else {
-                    BiomesOfCataclysms.LOGGER.error("Errore: " + targetBiomeId + " non esiste nella lista dei biomi!");
+            boolean changed = false;
+            int sky = level.getMaxBuildHeight();
+            for (var entry : floodedHeights.entrySet()) {
+                if (entry.getValue() < sky) {
+                    entry.setValue(entry.getValue() + 1);
+                    changed = true;
                 }
-                return;
             }
 
-            if (index > 0) {
-                // Eseguiamo lo scambio solo se non è già al primo posto
-                String currentFirst = this.shuffledBiomes.getFirst();
-                this.shuffledBiomes.set(0, targetBiomeId);
-                this.shuffledBiomes.set(index, currentFirst);
-                BiomesOfCataclysms.LOGGER.info("Swap eseguito: " + targetBiomeId + " ora è il prossimo.");
+            if (changed) {
+                this.setDirty();
             }
-
-            // Aggiorniamo SEMPRE il puntatore del display e sincronizziamo
-            this.nextBiomeToAffect = targetBiomeId;
-            this.syncData(level);
+            return changed;
         }
 
+        public void startSunBurn(String biomeId, ServerLevel level) {
+            sunBurnStartTicks.putIfAbsent(biomeId, level.getGameTime());
+            setDirty();
+        }
+        public long getSunBurnElapsedTicks(String biomeId, ServerLevel level) {
+            return level.getGameTime() - sunBurnStartTicks.getOrDefault(biomeId, level.getGameTime());
+        }
         //------------------------------------------
 
 
         public void syncData(LevelAccessor world) {
             this.setDirty();
-            if (world instanceof Level && !world.isClientSide())
-                PacketDistributor.sendToAllPlayers(new SavedDataSyncMessage(0, this));
+
+            if (world instanceof Level level && !world.isClientSide()) {
+                MapVariables snapshot = this.copyForSync(level.registryAccess());
+                PacketDistributor.sendToAllPlayers(new SavedDataSyncMessage(0, snapshot));
+            }
+        }
+        public MapVariables copyForSync(HolderLookup.Provider provider) {
+            CompoundTag tag = this.save(new CompoundTag(), provider);
+            return MapVariables.load(tag, provider);
         }
 
         public static MapVariables clientSide = new MapVariables();
@@ -554,5 +767,3 @@ public class ModVariables {
         }
     }
 }
-
-// Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException
