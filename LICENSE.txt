@@ -17,6 +17,13 @@ No part of the Mod may be considered public domain, freely reusable, or open sou
 The inclusion of the Mod within modpacks is permitted, provided that such modpacks are distributed free of charge and are not subject
 to any form of payment, monetization, or paid access for distribution. In all cases, the Mod may not be extracted, separated, sold, or
 redistributed as a standalone product, nor may any references to this license be removed or altered.
+Use of the Mod and its assets is permitted exclusively for demonstrative, illustrative, educational, or promotional purposes in video tutorials,
+gameplay content, reviews, livestreams, and similar audiovisual works, including those monetized through the standard monetization features of platforms.
+Such use is permitted only on the condition that it is clearly, visibly, and unequivocally stated that the Mod is the property of the rights holder and
+that it does not in any way constitute a work, modification, version, or content created by the party publishing the material.
+Under no circumstances may the assets of the Mod be extracted, reused, modified, incorporated, redistributed, or claimed as one’s own,
+except where expressly authorized solely for the visual demonstration of the content.
+
 
 The Mod may also be used in videos, livestreams, gameplay content, reviews, tutorials, and similar audiovisual works,
 including those monetized through standard platform monetization features, provided that such use does not involve unauthorized
