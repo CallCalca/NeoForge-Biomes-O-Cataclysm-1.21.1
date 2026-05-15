@@ -286,7 +286,7 @@ public class ModServerEvents {
                         .withUnderlined(false)
                         .withClickEvent(new ClickEvent(
                                 ClickEvent.Action.OPEN_URL,
-                                "work in progress"
+                                "https://www.notion.so/Biomes-O-Cataclysms-Wiki-06701d6d4acb83929ed7818799b2dde9?source=copy_link"
                         ))
                         .withColor(ChatFormatting.LIGHT_PURPLE)
                         .withBold(true)
