@@ -28,6 +28,7 @@ import net.minecraft.commands.Commands;
 import java.util.Objects;
 
 import static net.calca.biomesofcataclysms.ModUtils.decodeCataclysmFromEnum;
+import static net.calca.biomesofcataclysms.event.ModServerEvents.flushRuntimeToSaved;
 
 @EventBusSubscriber
 public class ModCommands {
@@ -376,6 +377,14 @@ public class ModCommands {
                                             1F,                               // volume
                                             0.6F                                // pitch
                                     );
+                                }
+
+                                for (ServerLevel serverLevel : server.getAllLevels()) {
+                                    flushRuntimeToSaved(serverLevel);
+
+                                    if (!ModUtils.isAGameAlreadyStarted(variables) && variables.state == 1){
+                                        variables.state = 0;
+                                    }
                                 }
 
                                 variables.state = 1;

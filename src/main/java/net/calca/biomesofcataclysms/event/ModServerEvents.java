@@ -86,19 +86,13 @@ public class ModServerEvents {
         MinecraftServer server = event.getServer();
 
         for (ServerLevel serverLevel : server.getAllLevels()) {
-            flushRuntimeToSaved(serverLevel);
             //-------------------
-            ModVariables.MapVariables variables = ModVariables.MapVariables.get(serverLevel);
             server.getCommands().performPrefixedCommand(
                     server.createCommandSourceStack()
                             .withSuppressedOutput()
                             .withPermission(4),   // livello OP massimo
                     "biomesOfCataclysms pause"
             );
-            if (!ModUtils.isAGameAlreadyStarted(variables) && variables.state == 1){
-                variables.state = 0;
-            }
-            variables.syncData(serverLevel);
 
             ModUtils.sendChatMessage(serverLevel, Component.literal("Server Shutting Down: Game paused"));
         }
@@ -124,7 +118,7 @@ public class ModServerEvents {
             }
             saved.chunks.put(dimEntry.getKey(), dimCopy);
         }
-        saved.syncData(server);
+        saved.setDirty(); // solo salvataggio su disco
     }
     private static DeletionQueueManager.DimensionState copyState(DeletionQueueManager.DimensionState src) {
         DeletionQueueManager.DimensionState dst = new DeletionQueueManager.DimensionState();
@@ -817,7 +811,7 @@ public class ModServerEvents {
             ModVariables.MapVariables vars = ModVariables.MapVariables.get(level);
             if (!vars.debugMode) return;
             if (event.getState().is(Blocks.STONE)) {
-                    String target = Biomes.PLAINS.location().toString();
+                    String target = Biomes.FOREST.location().toString();
 
                 vars.forceNextBiome(target, level);
 
@@ -830,7 +824,7 @@ public class ModServerEvents {
 
                 level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
             }else if (event.getState().is(Blocks.GRASS_BLOCK)){
-                String target = Biomes.JUNGLE.location().toString();
+                String target = Biomes.PLAINS.location().toString();
 
                 vars.forceNextBiome(target, level);
 
@@ -845,6 +839,146 @@ public class ModServerEvents {
 
             } else if (event.getState().is(Blocks.DIRT)) {
                 String target = Biomes.RIVER.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.NETHERRACK)) {
+                String target = Biomes.NETHER_WASTES.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.SOUL_SAND)) {
+                String target = Biomes.SOUL_SAND_VALLEY.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.END_STONE)) {
+                String target = Biomes.THE_END.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.JUNGLE_LOG)) {
+                String target = Biomes.JUNGLE.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.ACACIA_LOG)) {
+                String target = Biomes.SAVANNA.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.SPRUCE_LOG)) {
+                String target = Biomes.OLD_GROWTH_PINE_TAIGA.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.PRISMARINE)) {
+                String target = Biomes.OCEAN.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.ICE)) {
+                String target = Biomes.COLD_OCEAN.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.PACKED_ICE)) {
+                String target = Biomes.LUKEWARM_OCEAN.location().toString();
+
+                vars.forceNextBiome(target, level);
+
+                // Debug in chat
+                event.getPlayer().displayClientMessage(
+                        Component.literal("Destino modificato! Prossimo: " + vars.nextBiomeToAffect)
+                                .withStyle(ChatFormatting.GOLD),
+                        false
+                );
+
+                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+
+            } else if (event.getState().is(Blocks.SCULK)) {
+                String target = Biomes.DEEP_DARK.location().toString();
 
                 vars.forceNextBiome(target, level);
 
