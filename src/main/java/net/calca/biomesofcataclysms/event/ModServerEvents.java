@@ -56,7 +56,7 @@ public class ModServerEvents {
             ModVariables.MapVariables variables = ModVariables.MapVariables.get(event.getServer().overworld());
             if (variables.state == 2){ //Game data might be corrupted: The server was not shut down correctly last time.
                 variables.dataCondition = 2;
-                variables.syncData(event.getServer().overworld());
+                variables.syncData(event.getServer().overworld(), true, false);
 
             }
             loadRuntimeFromSaved(event.getServer().overworld());
@@ -77,7 +77,7 @@ public class ModServerEvents {
             Map<Long, ChunkMod> dimCopy = new HashMap<>(dimEntry.getValue());
             RuntimeBuffers.CHUNKS.put(dimEntry.getKey(), dimCopy);
         }
-        saved.syncData(server);
+        saved.syncData(server, true, false);
     }
 
 
@@ -175,7 +175,7 @@ public class ModServerEvents {
 
             if (variables.dataCondition != -1){
                 variables.dataCondition = -1;
-                variables.syncData(serverLevel);
+                variables.syncData(serverLevel, true, false);
             }
             return;
         }
@@ -533,7 +533,7 @@ public class ModServerEvents {
         }
         //globalVars.syncData(server.overworld());
         for (ServerLevel level : server.getAllLevels()) {
-            globalVars.syncData(level);
+            globalVars.syncData(level, true, false);
         }
 
     }

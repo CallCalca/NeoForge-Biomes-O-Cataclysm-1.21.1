@@ -143,7 +143,7 @@ public class ModUtils {
         } else if (allCataclysms == AllCataclysms.SUN_BURNT) {
             return Component.translatable("possibleCataclysm.biomesofcataclysms.sun_burnt").getString();
         }else{
-            return ModUtils.buildErrorMessage(true, 10, Component.literal("decodeCataclysmFromEnum"),
+            return ModUtils.buildErrorMessage(false, 10, Component.literal("decodeCataclysmFromEnum"),
                     Component.translatable("error.biomesofcataclysms.error10")).getString();
         }
     }

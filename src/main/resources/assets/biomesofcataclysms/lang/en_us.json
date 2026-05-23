@@ -103,7 +103,7 @@
   "error.biomesofcataclysms.error5": "The list of biomes pending extraction is empty. The data is corrupted and cannot be recovered. Please create a new world and start a new game.",
   "error.biomesofcataclysms.error6": "Mode value out of bounds (!= 0; != 1).",
   "error.biomesofcataclysms.error7": "Cannot start the game: 'state' value out of bounds (the game is neither newly generated, nor paused, nor in progress) while trying to RESUME the game.",
-  "error.biomesofcataclysms.error8": "Debug Mode must be active to use this command. Do not activate Debug Mode unless you know what you are doing!",
+  "error.biomesofcataclysms.error8": "",
   "error.biomesofcataclysms.error9": "PC Power value out of bounds (neither potato, nor low, nor medium, nor high, nor extreme, nor max).",
   "error.biomesofcataclysms.error10": "The incoming cataclysm value is out of bounds.",
   "error.biomesofcataclysms.error11": "While trying to transform 'cataclysm' (String) to AllCataclysm (Enum), the return value was null.",
@@ -126,6 +126,7 @@
   "warning.biomesofcataclysms.setDebugMode": "You have enabled Debug Mode. This is intended for analyzing how the game code works, not for gameplay, so disable it if you don’t know what you’re doing!",
   "warning.biomesofcataclysms.shuffledBiomesRecovered": "The list of biomes to be destroyed has been regenerated based on the list of biomes already destroyed. If the latter list is corrupted, the error will propagate.\nBiomes to delete: %s.\nBiomes deleted: %s.",
   "warning.biomesofcataclysms.state": "The game is not currently paused (it is in the running state).",
+  "warning.biomesofcataclysms.debugModeMustBeActive": "Debug Mode must be active to use this command. Do not activate Debug Mode unless you know what you are doing!",
   "warning.biomesofcataclysms.stateCritical": "The game is in an invalid state (possible corruption).",
 
   "//": "--- MISC ---",

@@ -65,10 +65,12 @@ public class ModVariables {
             if (event.getEntity() instanceof ServerPlayer player) {
                 SavedData mapdata = MapVariables.get(event.getEntity().level());
                 SavedData worlddata = WorldVariables.get(event.getEntity().level());
-                if (mapdata != null)
-                    PacketDistributor.sendToPlayer(player, new SavedDataSyncMessage(0, mapdata));
-                if (worlddata != null)
-                    PacketDistributor.sendToPlayer(player, new SavedDataSyncMessage(1, worlddata));
+                if (mapdata != null) { //No use out of this class
+                    //PacketDistributor.sendToPlayer(player, new SavedDataSyncMessage(0, mapdata));
+                }
+                if (worlddata != null) { //No need to sync: all logic is server side
+                    //PacketDistributor.sendToPlayer(player, new SavedDataSyncMessage(1, worlddata));
+                }
             }
         }
 
@@ -446,7 +448,7 @@ public class ModVariables {
                 this.nextBiomeToAffect = this.shuffledBiomes.get(0);
                 buildOverworldBiomesList();
             }
-            this.syncData(level);
+            this.syncData(level, true, false);
         }
         private void buildOverworldBiomesList() {
             overworldBiomeList.clear();
@@ -514,7 +516,7 @@ public class ModVariables {
 
             // Aggiorniamo SEMPRE il puntatore del display e sincronizziamo
             this.nextBiomeToAffect = targetBiomeId;
-            this.syncData(level);
+            this.syncData(level, true, false);
         }
 
         // Aggiorna anche scanContinuous per usare la logica a onda più leggera
@@ -703,14 +705,32 @@ public class ModVariables {
         //------------------------------------------
 
 
-        public void syncData(LevelAccessor world) {
-            this.setDirty();
-
+        /**
+         * @param world -> Il server
+         * @param saveOnDisk -> Salva i dati sul disco (sul server)
+         * @param sendClientPacket -> Invia un packetto dati al client.
+         * Utilizza i metodi sendClientPacket(LevelAccessor) oppure saveDataOnDisk() se è solo necessario inviare un pacchetto o salvare su disco.
+         *                         Dove possibile è meglio utilizzare syncData(LevelAccessor, boolean, boolean): è più dinamico;
+         *                         se per esempio non si riesce ad accedere a un LevelAccessor allora si utilizza il metodo saveDataOnDisk();
+         */
+        public void syncData(LevelAccessor world, boolean saveOnDisk, boolean sendClientPacket) {
+            if (saveOnDisk) this.setDirty();
+            if (!sendClientPacket) return;
             if (world instanceof Level level && !world.isClientSide()) {
                 MapVariables snapshot = this.copyForSync(level.registryAccess());
                 PacketDistributor.sendToAllPlayers(new SavedDataSyncMessage(0, snapshot));
             }
         }
+        public void sendClientPacket(LevelAccessor world) {
+            if (world instanceof Level level && !world.isClientSide()) {
+                MapVariables snapshot = this.copyForSync(level.registryAccess());
+                PacketDistributor.sendToAllPlayers(new SavedDataSyncMessage(0, snapshot));
+            }
+        }
+        public void saveDataOnDisk() {
+            this.setDirty();
+        }
+
         public MapVariables copyForSync(HolderLookup.Provider provider) {
             CompoundTag tag = this.save(new CompoundTag(), provider);
             return MapVariables.load(tag, provider);

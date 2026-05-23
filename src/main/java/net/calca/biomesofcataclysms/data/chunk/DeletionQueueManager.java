@@ -227,7 +227,7 @@ public class DeletionQueueManager {
             AllCataclysms type = ModUtils.decodeCataclysmFromString(mapVariables.cataclysm);
             if (type == null){
                 type = AllCataclysms.DESTROYED;
-                ModUtils.sendChatMessage(level, ModUtils.buildErrorMessage(true, 11, Component.literal("process"),
+                ModUtils.sendChatMessage(level, ModUtils.buildErrorMessage(true, 11, Component.literal("refreshDynamicQueue"),
                         Component.translatable("error.biomesofcataclysms.error11")));
                 return;
             }
@@ -1237,12 +1237,12 @@ public class DeletionQueueManager {
     public static void processInitialQueue(ServerLevel level, int passes) {
         ModVariables.MapVariables variables = ModVariables.MapVariables.get(level);
         process(level, RuntimeBuffers.INITIAL_ORDER, RuntimeBuffers.INITIAL_STATES, passes, false);
-        variables.syncData(level);
+        variables.syncData(level, true, false);
     }
     public static void processDynamicQueue(ServerLevel level, int passes) {
         ModVariables.MapVariables variables = ModVariables.MapVariables.get(level);
         process(level, RuntimeBuffers.DYNAMIC_ORDER, RuntimeBuffers.DYNAMIC_STATES, passes, true);
-        variables.syncData(level);
+        variables.syncData(level, true, false);
     }
 
 

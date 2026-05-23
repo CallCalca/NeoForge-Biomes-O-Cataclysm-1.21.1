@@ -239,7 +239,7 @@ public class ModCommands {
                     Component.literal("settingPcPowerComponents"), Component.translatable("error.biomesofcataclysms.error9")));
 
         }
-        variables.syncData(world);
+        variables.syncData(world, true, false);
         Minecraft.getInstance().options.renderDistance().set(variables.radius);
         server.getPlayerList().setViewDistance(variables.radius);
     }
@@ -356,7 +356,7 @@ public class ModCommands {
                                 ModUtils.playLocalErrorSound(serverPlayer);
                             }
 
-                            variables.syncData(world);
+                            variables.syncData(world, true, false);
 
                             return 0;
                         }))
@@ -388,7 +388,7 @@ public class ModCommands {
                                 }
 
                                 variables.state = 1;
-                                variables.syncData(world);
+                                variables.syncData(world, true, false);
                             }else{
                                 ServerPlayer player = arguments.getSource().getPlayer();
                                 assert player != null;
@@ -438,7 +438,7 @@ public class ModCommands {
 
                                     if (variables.mode == 1){
                                         variables.mode = 0;
-                                        variables.syncData(world);
+                                        variables.syncData(world, true, false);
                                         MutableComponent modeToString = decodeModeToString(variables).withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
                                         ModUtils.sendChatMessage(world,
                                                 Component.translatable("command.biomesofcataclysms.setModeTo", modeToString)
@@ -478,7 +478,7 @@ public class ModCommands {
 
                                     if (variables.mode == 0){
                                         variables.mode = 1;
-                                        variables.syncData(world);
+                                        variables.syncData(world, true, false);
                                         MutableComponent modeToString = decodeModeToString(variables).withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
                                         ModUtils.sendChatMessage(world,
                                                 Component.translatable("command.biomesofcataclysms.setModeTo", modeToString)
@@ -563,7 +563,7 @@ public class ModCommands {
 
                                             variables.tickDelayBetweenCataclysm = (biomePerMinutesMinutes*60*20) + (biomePerMinutesSeconds*20);
                                             variables.tickToNextCataclysm = variables.tickDelayBetweenCataclysm;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
                                             if (biomePerMinutes % 1 != 0) {
                                                 biomePerMinuteString = Component.literal(String.valueOf(biomePerMinutesMinutes))
                                                         .append(" ")
@@ -624,7 +624,7 @@ public class ModCommands {
                                                         1F,                               // volume
                                                         0.9F                                // pitch
                                                 );
-                                                variables.syncData(world);
+                                                variables.syncData(world, true, false);
                                             }
 
                                             return 0;
@@ -668,7 +668,7 @@ public class ModCommands {
 
                                             variables.tickDelayBetweenCataclysm = minutes*60*20;
                                             variables.tickToNextCataclysm = variables.tickDelayBetweenCataclysm;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
 
                                             ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setDelayBetweenCataclysms",
                                                     minutesString).withStyle(ChatFormatting.BOLD, ChatFormatting.GREEN)); //Starting
@@ -698,7 +698,7 @@ public class ModCommands {
                                     setDifficultyMsg(0, arguments.getSource().getServer(), world);
 
                                     variables.difficulty = 0;
-                                    variables.syncData(world);
+                                    variables.syncData(world, true, false);
 
                                     return 0;
                                 })
@@ -715,7 +715,7 @@ public class ModCommands {
                                     setDifficultyMsg(1, arguments.getSource().getServer(), world);
 
                                     variables.difficulty = 1;
-                                    variables.syncData(world);
+                                    variables.syncData(world, true, false);
 
 
                                     return 0;
@@ -733,7 +733,7 @@ public class ModCommands {
                                     setDifficultyMsg(2, arguments.getSource().getServer(), world);
 
                                     variables.difficulty = 2;
-                                    variables.syncData(world);
+                                    variables.syncData(world, true, false);
 
 
                                     return 0;
@@ -751,7 +751,7 @@ public class ModCommands {
                                     setDifficultyMsg(3, arguments.getSource().getServer(), world);
 
                                     variables.difficulty = 3;
-                                    variables.syncData(world);
+                                    variables.syncData(world, true, false);
 
 
                                     return 0;
@@ -769,7 +769,7 @@ public class ModCommands {
                                     setDifficultyMsg(4, arguments.getSource().getServer(), world);
 
                                     variables.difficulty = 4;
-                                    variables.syncData(world);
+                                    variables.syncData(world, true, false);
 
 
                                     return 0;
@@ -786,7 +786,7 @@ public class ModCommands {
                                             setPcPowerMsg(5, arguments.getSource().getServer(), world);
 
                                             variables.pcPower = 5;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
 
                                             settingUpPcPowerComponents(variables, world, arguments.getSource().getServer());
                                             return 0;
@@ -800,7 +800,7 @@ public class ModCommands {
                                             setPcPowerMsg(4, arguments.getSource().getServer(), world);
 
                                             variables.pcPower = 4;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
 
                                             settingUpPcPowerComponents(variables, world, arguments.getSource().getServer());
                                             return 0;
@@ -814,7 +814,7 @@ public class ModCommands {
                                             setPcPowerMsg(3, arguments.getSource().getServer(), world);
 
                                             variables.pcPower = 3;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
 
                                             settingUpPcPowerComponents(variables, world, arguments.getSource().getServer());
                                             return 0;
@@ -828,7 +828,7 @@ public class ModCommands {
                                             setPcPowerMsg(2, arguments.getSource().getServer(), world);
 
                                             variables.pcPower = 2;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
 
                                             settingUpPcPowerComponents(variables, world, arguments.getSource().getServer());
                                             return 0;
@@ -842,7 +842,7 @@ public class ModCommands {
                                             setPcPowerMsg(1, arguments.getSource().getServer(), world);
 
                                             variables.pcPower = 1;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
 
                                             settingUpPcPowerComponents(variables, world, arguments.getSource().getServer());
                                             return 0;
@@ -856,7 +856,7 @@ public class ModCommands {
                                             setPcPowerMsg(0, arguments.getSource().getServer(), world);
 
                                             variables.pcPower = 0;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
 
                                             settingUpPcPowerComponents(variables, world, arguments.getSource().getServer());
                                             return 0;
@@ -879,7 +879,7 @@ public class ModCommands {
                                             boolean enabled = BoolArgumentType.getBool(arguments, "enable");
                                             ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
                                             variables.debugMode = enabled;
-                                            variables.syncData(world);
+                                            variables.syncData(world, true, false);
                                             if (enabled){
                                                 ModUtils.sendLocalChatMessageTo(Objects.requireNonNull(arguments.getSource().getPlayer()),
                                                         ModUtils.buildWarningMessage(true, Component.literal("Debug"),
@@ -905,7 +905,7 @@ public class ModCommands {
                                                     ModUtils.sendChatMessage(world, ModUtils.buildWarningMessage(false, Component.literal("Debug"),
                                                             Component.translatable("warning.biomesofcataclysms.forceNextBiomeCommand1")));
                                                     variables.tickToNextCataclysm = 20;
-                                                    variables.syncData(world);
+                                                    variables.syncData(world, true, false);
                                                 }else{
                                                     ModUtils.sendChatMessage(world, ModUtils.buildWarningMessage(false, Component.literal("Debug"),
                                                             Component.translatable("command.biomesofcataclysms.aGameMustBeRunning")));
@@ -913,8 +913,8 @@ public class ModCommands {
 
                                             }else{
                                                 ModUtils.sendLocalChatMessageTo(Objects.requireNonNull(arguments.getSource().getPlayer()),
-                                                        ModUtils.buildErrorMessage(false, 8, Component.literal("forceNextBiome[C]"),
-                                                        Component.translatable("error.biomesofcataclysms.error8")));
+                                                        ModUtils.buildWarningMessage(false, Component.literal("forceNextBiome[C]"),
+                                                        Component.translatable("warning.biomesofcataclysms.debugModeMustBeActive")));
                                             }
 
                                             return 0;
@@ -929,7 +929,7 @@ public class ModCommands {
                                                     variables.timer = 0;
                                                     ModUtils.sendChatMessage(world, ModUtils.buildWarningMessage(false, Component.literal("Debug"),
                                                             Component.translatable("warning.biomesofcataclysms.forceTimerTo0")));
-                                                    variables.syncData(world);
+                                                    variables.syncData(world, true, false);
                                                 }else{
                                                     ModUtils.sendChatMessage(world, ModUtils.buildWarningMessage(false, Component.literal("Debug"),
                                                             Component.translatable("command.biomesofcataclysms.aGameMustBeRunning")));
@@ -937,8 +937,8 @@ public class ModCommands {
 
                                             }else{
                                                 ModUtils.sendLocalChatMessageTo(Objects.requireNonNull(arguments.getSource().getPlayer()),
-                                                        ModUtils.buildErrorMessage(false, 8, Component.literal("forceNextBiome[C]"),
-                                                        Component.translatable("error.biomesofcataclysms.error8")));
+                                                        ModUtils.buildWarningMessage(false, Component.literal("forceNextBiome[C]"),
+                                                        Component.translatable("warning.biomesofcataclysms.debugModeMustBeActive")));
                                             }
 
                                             return 0;
@@ -1003,7 +1003,7 @@ public class ModCommands {
                                     } //Check
 
                                     variables.cataclysm = ModUtils.decodeCataclysmFromEnum(AllCataclysms.FLOODED);
-                                    variables.syncData(world);
+                                    variables.syncData(world, true, false);
                                     MutableComponent cataclysm = Component.literal(variables.cataclysm)
                                             .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
 
@@ -1051,7 +1051,7 @@ public class ModCommands {
                                     } //Check
 
                                     variables.cataclysm = ModUtils.decodeCataclysmFromEnum(AllCataclysms.SUN_BURNT);
-                                    variables.syncData(world);
+                                    variables.syncData(world, true, false);
                                     MutableComponent cataclysm = Component.literal(variables.cataclysm)
                                             .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
 
@@ -1087,7 +1087,7 @@ public class ModCommands {
             ModUtils.sendChatMessage(serverLevel, infoMsg);
 
             if (variables.shuffledBiomes.isEmpty()){
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildErrorMessage(true, 5,  Component.literal("shuffledBiomes"),
+                ModUtils.sendChatMessage(serverLevel, ModUtils.buildErrorMessage(true, 5,  Component.literal("shuffledBiomes[R]"),
                         Component.translatable("error.biomesofcataclysms.error5")));
                 variables.dataCondition = 1;
                 return;
@@ -1136,7 +1136,7 @@ public class ModCommands {
             if (variables.shuffledBiomes.isEmpty()){
                 variables.generateFullBiomeList(serverLevel);
                 variables.shuffledBiomes.removeIf(variables.deletedBiomes::contains);
-                variables.syncData(serverLevel);
+                variables.syncData(serverLevel, true, false);
                 ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(false, Component.literal("attemptDataRecovery"),
                         Component.translatable("warning.biomesofcataclysms.shuffledBiomesRecovered", variables.shuffledBiomes, variables.deletedBiomes)));
             }

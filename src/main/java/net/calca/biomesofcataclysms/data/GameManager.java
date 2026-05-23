@@ -40,7 +40,7 @@ public class GameManager {
             playSound(player);
 
                 vars.allNetherBiomesHitShouldNotify = false;
-                vars.syncData(level);
+                vars.syncData(level, true, false);
             });
         }
 
@@ -65,7 +65,7 @@ public class GameManager {
             playSound(player);
 
                 vars.allEndBiomesHitShouldNotify = false;
-                vars.syncData(level);
+                vars.syncData(level, true, false);
             });
         }
 
@@ -86,7 +86,7 @@ public class GameManager {
                 playSound(player);
 
                 vars.allOverworldBiomesHitShouldNotify = false;
-                vars.syncData(level);
+                vars.syncData(level, true, false);
             });
         }
 
@@ -102,7 +102,7 @@ public class GameManager {
 
             });
             vars.tickToNextCataclysm = Integer.MAX_VALUE;
-            vars.syncData(level);
+            vars.syncData(level, true, false);
         }
 
 
