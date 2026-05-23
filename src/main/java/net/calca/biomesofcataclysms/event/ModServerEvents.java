@@ -3,6 +3,7 @@ package net.calca.biomesofcataclysms.event;
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 
 import net.calca.biomesofcataclysms.ModUtils;
+import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.data.GameManager;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.data.cataclysm.SunBurnStage;
@@ -23,6 +24,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -58,6 +60,9 @@ public class ModServerEvents {
                 variables.dataCondition = 2;
                 variables.syncData(event.getServer().overworld(), true, false);
 
+            }
+            for (ServerLevel serverLevel : event.getServer().getAllLevels()){
+                ProgressBarManager.initializeOnServerStart(variables, serverLevel);
             }
             loadRuntimeFromSaved(event.getServer().overworld());
     }
@@ -133,6 +138,7 @@ public class ModServerEvents {
         ServerLevel serverLevel = (ServerLevel) event.getEntity().level();
         ModVariables.MapVariables variables = ModVariables.MapVariables.get(serverLevel);
         Player player = event.getEntity();
+        ProgressBarManager.addPlayerOnLogIn(player);
 
         if (variables.dataCondition == -1) {
             MutableComponent errorMsg = ModUtils.buildErrorMessage(
@@ -435,7 +441,7 @@ public class ModServerEvents {
                         for (ServerPlayer player : level.players()) {
                             if (player.isSpectator()) continue;
                             if (!player.hasEffect(MobEffects.WATER_BREATHING) && !player.isUnderWater()){
-                                player.setAirSupply(Math.max(player.getAirSupply() - 5, -20));
+                                player.setAirSupply(player.getAirSupply() - 5);
                             } else if (player.hasEffect(MobEffects.WATER_BREATHING)) {
                                 if (player.getAirSupply() > 290){
                                     player.setAirSupply(290);
@@ -446,6 +452,7 @@ public class ModServerEvents {
                     }
                 }else{
                     globalVars.timer--;
+                    ProgressBarManager.TimerProgressBar.tick(globalVars);
                 }
             }
             if (!globalVars.graceCheckHappen) {
@@ -500,6 +507,7 @@ public class ModServerEvents {
                             .sum();
                     globalVars.gracePeriod = (totalChunks / initialDestructionSpeed) * 4;
                     if (globalVars.gracePeriod > 0) {
+                        ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.setColor(BossEvent.BossBarColor.YELLOW);
                         globalVars.graceCheckHappen = false;
                         MutableComponent component1 = Component.translatable("command.biomesofcataclysms.gracePeriod").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
                                 .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
@@ -518,6 +526,7 @@ public class ModServerEvents {
                     globalVars.gracePeriod = (totalChunks / 4) * 4;
                     if (globalVars.gracePeriod > 15 * 20) globalVars.gracePeriod = 15 * 20;
                     if (globalVars.gracePeriod > 0) {
+                        ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.setColor(BossEvent.BossBarColor.YELLOW);
                         globalVars.graceCheckHappen = false;
                         MutableComponent component1 = Component.translatable("command.biomesofcataclysms.gracePeriod").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
                                 .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
@@ -634,6 +643,9 @@ public class ModServerEvents {
                             0.8F                                // pitch
                     );
                 }
+            }
+            if (globalVars.deletedBiomes.size() != globalVars.totalBiomes){
+                ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.setColor(BossEvent.BossBarColor.BLUE);
             }
         }
     }

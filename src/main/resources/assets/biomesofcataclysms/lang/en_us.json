@@ -134,5 +134,6 @@
   "command.biomesofcataclysms.setCataclysmTo": "Cataclysm set to: %s",
   "command.biomesofcataclysms.cannotChangeCataclusm": "It is not possible to change the cataclysm once a biome has already been selected in the game.",
   "command.biomesofcataclysms.changeCataclysm": "Change Cataclysm",
-  "command.biomesofcataclysms.modeMustBeSetToApocalypse": "The mode must be set to Apocalypse!"
+  "command.biomesofcataclysms.modeMustBeSetToApocalypse": "The mode must be set to Apocalypse!",
+  "progressBar.title.timerProgressBar": "Remaining Time | %s"
 }

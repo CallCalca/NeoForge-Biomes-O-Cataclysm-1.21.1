@@ -2,6 +2,7 @@ package net.calca.biomesofcataclysms.data;
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
+import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -9,6 +10,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.biome.Biomes;
 
@@ -103,6 +105,7 @@ public class GameManager {
             });
             vars.tickToNextCataclysm = Integer.MAX_VALUE;
             vars.syncData(level, true, false);
+            ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.setColor(BossEvent.BossBarColor.RED);
         }
 
 

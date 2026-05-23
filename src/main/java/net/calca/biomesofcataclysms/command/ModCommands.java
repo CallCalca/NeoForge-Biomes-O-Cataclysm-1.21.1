@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
+import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.data.ModVariables;
 import net.minecraft.ChatFormatting;
@@ -17,6 +18,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.LevelAccessor;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -593,6 +595,7 @@ public class ModCommands {
                                                     1F,                               // volume
                                                     0.9F                                // pitch
                                             );
+                                            ProgressBarManager.TimerProgressBar.initialize(variables, world);
 
                                             return 0;
                                         })
@@ -625,6 +628,8 @@ public class ModCommands {
                                                         0.9F                                // pitch
                                                 );
                                                 variables.syncData(world, true, false);
+
+                                                ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.removeForAllPlayers();
                                             }
 
                                             return 0;
@@ -700,6 +705,8 @@ public class ModCommands {
                                     variables.difficulty = 0;
                                     variables.syncData(world, true, false);
 
+                                    ProgressBarManager.TimerProgressBar.setTitle(variables);
+
                                     return 0;
                                 })
                         )
@@ -717,6 +724,7 @@ public class ModCommands {
                                     variables.difficulty = 1;
                                     variables.syncData(world, true, false);
 
+                                    ProgressBarManager.TimerProgressBar.setTitle(variables);
 
                                     return 0;
                                 })
@@ -735,6 +743,7 @@ public class ModCommands {
                                     variables.difficulty = 2;
                                     variables.syncData(world, true, false);
 
+                                    ProgressBarManager.TimerProgressBar.setTitle(variables);
 
                                     return 0;
                                 })
@@ -753,6 +762,7 @@ public class ModCommands {
                                     variables.difficulty = 3;
                                     variables.syncData(world, true, false);
 
+                                    ProgressBarManager.TimerProgressBar.setTitle(variables);
 
                                     return 0;
                                 })
@@ -771,6 +781,7 @@ public class ModCommands {
                                     variables.difficulty = 4;
                                     variables.syncData(world, true, false);
 
+                                    ProgressBarManager.TimerProgressBar.setTitle(variables);
 
                                     return 0;
                                 })
@@ -927,6 +938,8 @@ public class ModCommands {
                                             if (variables.debugMode){
                                                 if (variables.state == 2){
                                                     variables.timer = 0;
+                                                    ProgressBarManager.TimerProgressBar.tick(variables);
+                                                    ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.setColor(BossEvent.BossBarColor.RED);
                                                     ModUtils.sendChatMessage(world, ModUtils.buildWarningMessage(false, Component.literal("Debug"),
                                                             Component.translatable("warning.biomesofcataclysms.forceTimerTo0")));
                                                     variables.syncData(world, true, false);

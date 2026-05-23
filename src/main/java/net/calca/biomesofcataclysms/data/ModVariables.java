@@ -444,6 +444,7 @@ public class ModVariables {
 
             Collections.shuffle(this.shuffledBiomes);
             this.totalBiomes = shuffledBiomes.size();
+            this.biomesToAffect = totalBiomes;
             if (!shuffledBiomes.isEmpty()){
                 this.nextBiomeToAffect = this.shuffledBiomes.get(0);
                 buildOverworldBiomesList();
@@ -476,6 +477,7 @@ public class ModVariables {
             String targetBiomeId = this.shuffledBiomes.remove(0);
             this.deletedBiomes.add(targetBiomeId);
             this.biomesAffected++;
+            this.biomesAffected--;
 
             if (!this.shuffledBiomes.isEmpty()) {
                 this.nextBiomeToAffect = this.shuffledBiomes.get(0);
