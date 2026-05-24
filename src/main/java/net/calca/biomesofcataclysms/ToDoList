@@ -1,8 +1,6 @@
 
-1. Creare la translation delle lingue
-2. Ottimizazione codice
+2. Ottimizzazione codice
 3. Data recovery
-4. Rimuovere tutti i syncData, che tanto non servono, in modo da alleggerire il flusso di dati.
 
 Futuro:
 0. Implementare la funzione di recupero dati.
