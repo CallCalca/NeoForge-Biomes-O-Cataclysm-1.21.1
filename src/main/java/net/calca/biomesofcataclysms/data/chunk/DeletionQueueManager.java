@@ -444,7 +444,8 @@ public class DeletionQueueManager {
                     // Questo costringe il sistema a lavorare su TUTTI gli altri chunk prima di tornare qui.
                     registerDynamicChunk(level, current.pos); // Questo usa addLast() internamente
 
-                    current.state = ChunkState.QUEUED;
+                    if (current.lastFloodHeight < globalFloodY) current.state = ChunkState.QUEUED;
+                    else current.state = ChunkState.PARTIAL;
 
                     // 3. Rilasciamo il controllo immediatamente per questo "pass"
                     // Settando currentKey a null e facendo continue, il ciclo 'passes' passerà al prossimo chunk nella coda
@@ -802,6 +803,21 @@ public class DeletionQueueManager {
             }
         }
     }
+
+    public static void resetFloodWaves(ServerLevel level) {
+        ResourceKey<Level> dim = level.dimension();
+        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
+        if (registry == null) return;
+
+        for (ChunkMod mod : registry.values()) {
+            if (mod.state == ChunkState.PARTIAL) {
+                mod.state = ChunkState.QUEUED; // Torna disponibile
+                // Opzionale: lo riaggiungiamo alla coda se non c'è già
+                registerDynamicChunk(level, mod.pos);
+            }
+        }
+    }
+
     public static SunBurnStage getSunBurnStage(long elapsedTicks) {
         if (elapsedTicks < 20L * 60L) return SunBurnStage.FIRE; //Dura 60 secondi
         if (elapsedTicks < 20L * 105L) return SunBurnStage.BURNING; //Dura altri 45

@@ -680,18 +680,20 @@ public class ModVariables {
             this.setDirty();
         }
         public boolean tickFloodHeights(ServerLevel level) {
-            if (level.getGameTime() % 20 != 0) return false;
+            if (level.getGameTime() % 100 != 0) return false;
 
             boolean changed = false;
             int sky = level.getMaxBuildHeight();
             for (var entry : floodedHeights.entrySet()) {
                 if (entry.getValue() < sky) {
-                    entry.setValue(entry.getValue() + 1);
+                    entry.setValue(entry.getValue() + 2);
                     changed = true;
                 }
             }
 
+
             if (changed) {
+                DeletionQueueManager.resetFloodWaves(level);
                 this.setDirty();
             }
             return changed;
