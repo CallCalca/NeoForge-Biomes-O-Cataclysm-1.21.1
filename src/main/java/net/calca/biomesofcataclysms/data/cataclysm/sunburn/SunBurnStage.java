@@ -1,4 +1,4 @@
-package net.calca.biomesofcataclysms.data.cataclysm;
+package net.calca.biomesofcataclysms.data.cataclysm.sunburn;
 
 public enum SunBurnStage {
     FIRE,   // 0-1 min

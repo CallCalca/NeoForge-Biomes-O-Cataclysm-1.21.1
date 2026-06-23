@@ -6,13 +6,14 @@ import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.data.GameManager;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
-import net.calca.biomesofcataclysms.data.cataclysm.SunBurnStage;
+import net.calca.biomesofcataclysms.data.cataclysm.sunburn.SunBurnStage;
 import net.calca.biomesofcataclysms.data.chunk.ChunkMod;
 import net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager;
 import net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager.RuntimeBuffers;
 import net.calca.biomesofcataclysms.data.ModVariables;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -27,17 +28,19 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 import net.neoforged.neoforge.event.entity.player.*;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
@@ -315,6 +318,7 @@ public class ModServerEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         ModVariables.MapVariables globalVars = ModVariables.MapVariables.get(server.overworld());
+
         if (globalVars.state != 2) return;
         AllCataclysms type = ModUtils.decodeCataclysmFromString(globalVars.cataclysm);
 
@@ -540,13 +544,13 @@ public class ModServerEvents {
 
             }
         }
+
         //globalVars.syncData(server.overworld());
         for (ServerLevel level : server.getAllLevels()) {
             globalVars.syncData(level, true, false);
         }
 
     }
-
 
     private static void countDown(ModVariables.MapVariables variables, MinecraftServer server, int ticks, String nextBiome) {
         if (ticks >= 0 && ticks % 20 == 0) {
@@ -693,6 +697,42 @@ public class ModServerEvents {
             }
         }
 
+        //spawnMonstersAroundEternalDarkness(player, event.getEntity().level());
+
+    }
+
+    private static void spawnMonstersAroundEternalDarkness(Player player, Level level) {
+        // Eseguiamo il codice solo sul Server e ogni 100 tick (5 secondi)
+        if (!level.isClientSide() && level.getGameTime() % 100 == 0) {
+            ServerLevel serverLevel = (ServerLevel) level;
+
+            // Definisci un raggio d'azione (es. da 0 a 32 blocchi)
+            int radius = 16;
+            int xOffset = player.getRandom().nextIntBetweenInclusive(-radius, radius);
+            int zOffset = player.getRandom().nextIntBetweenInclusive(-radius, radius);
+            int yOffset = player.getRandom().nextIntBetweenInclusive(-4, 4); // Cerca anche un po' sopra/sotto
+
+            BlockPos spawnPos = player.blockPosition().offset(xOffset, yOffset, zOffset);
+
+            // Scegliamo un mostro a caso (es. uno Zombie)
+            EntityType<? extends Mob> entityType = EntityType.ZOMBIE;
+
+            // Verifichiamo se il blocco è adatto allo spawn (aria per l'entità, solido sotto)
+            if (serverLevel.getBlockState(spawnPos).isAir() && serverLevel.getBlockState(spawnPos.below()).isSolid()) {
+
+                // Spawna l'entità ignorando le restrizioni di luce e distanza di vanilla
+                Mob mob = entityType.create(serverLevel);
+                if (mob != null) {
+                    mob.moveTo(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5, player.getRandom().nextFloat() * 360F, 0.0F);
+
+                    // Finalizza lo spawn (imposta equipaggiamento, effetti, ecc.)
+                    mob.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(spawnPos), MobSpawnType.NATURAL, null);
+
+                    serverLevel.addFreshEntity(mob);
+                }
+            }
+        }
+
     }
 
     @SubscribeEvent
@@ -701,6 +741,7 @@ public class ModServerEvents {
         ModVariables.MapVariables globalVars = ModVariables.MapVariables.get(Objects.requireNonNull(player.getServer()).overworld());
         playerRespawnManager(globalVars, player);
     }
+
     private static void playerRespawnManager(ModVariables.MapVariables globalVars, Player player){
         if (globalVars.difficulty == 0) exEsDifficultyRespawn(globalVars, player);
         else if (globalVars.difficulty == 1) esDifficultyRespawn(globalVars, player);
@@ -815,6 +856,24 @@ public class ModServerEvents {
 
         }
 
+    }
+
+    @SubscribeEvent
+    public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
+        if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
+        if (event.getSpawnType() != MobSpawnType.NATURAL) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
+    }
+
+    @SubscribeEvent
+    public static void onSpawnPositionCheck(MobSpawnEvent.PositionCheck event) {
+        if (event.getEntity().getType().getCategory() != MobCategory.MONSTER) return;
+        if (event.getSpawnType() != MobSpawnType.NATURAL) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        event.setResult(MobSpawnEvent.PositionCheck.Result.SUCCEED);
     }
 
     @SubscribeEvent

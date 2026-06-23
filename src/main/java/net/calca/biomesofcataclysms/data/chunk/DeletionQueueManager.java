@@ -3,7 +3,7 @@ package net.calca.biomesofcataclysms.data.chunk;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.data.ModVariables;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
-import net.calca.biomesofcataclysms.data.cataclysm.SunBurnStage;
+import net.calca.biomesofcataclysms.data.cataclysm.sunburn.SunBurnStage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -140,7 +140,6 @@ public class DeletionQueueManager {
     private static Map<Long, ChunkMod> getOrCreateDimChunkMap(ResourceKey<Level> dim) {
         return RuntimeBuffers.CHUNKS.computeIfAbsent(dim, k -> new HashMap<>());
     }
-
     private static ArrayDeque<Long> getOrCreateQueue(Map<ResourceKey<Level>, ArrayDeque<Long>> store, ResourceKey<Level> dim) {
         ArrayDeque<Long> queue = store.get(dim);
         if (queue == null) {
@@ -149,7 +148,6 @@ public class DeletionQueueManager {
         }
         return queue;
     }
-
 
     public static void registerInitialChunk(ServerLevel level, ChunkPos pos) {
         ResourceKey<Level> dim = level.dimension();
@@ -170,7 +168,6 @@ public class DeletionQueueManager {
             queue.addLast(packed);
         }
     }
-
     public static void registerDynamicChunk(ServerLevel level, ChunkPos pos) {
         ResourceKey<Level> dim = level.dimension();
         long packed = pos.toLong();
@@ -195,23 +192,6 @@ public class DeletionQueueManager {
         ArrayDeque<Long> queue = getOrCreateQueue(RuntimeBuffers.DYNAMIC_ORDER, dim);
         if (!queue.contains(packed)) {
             queue.addLast(packed);
-        }
-    }
-    public static void registerPriorityDynamicChunk(ServerLevel level, ChunkPos pos) {
-        ResourceKey<Level> dim = level.dimension();
-        long packed = pos.toLong();
-
-        Map<Long, ChunkMod> dimMap = getOrCreateDimChunkMap(dim);
-        ChunkMod mod = dimMap.get(packed);
-
-        if (mod != null) {
-            mod.dynamic = true;
-            ArrayDeque<Long> queue = RuntimeBuffers.DYNAMIC_ORDER.get(dim);
-            if (queue != null) {
-                // Se è già in coda lo togliamo per rimetterlo in cima (evita duplicati e aggiorna posizione)
-                queue.remove(packed);
-                queue.addFirst(packed); // <--- LA CHIAVE: lo mettiamo davanti a tutti
-            }
         }
     }
 
@@ -770,7 +750,6 @@ public class DeletionQueueManager {
             }
         }
     }
-
     private static boolean hasExposedBiome(ServerLevel level, ChunkPos pos, Set<String> targetBiomes) {
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         for (int x = 0; x < 16; x++) {
@@ -789,7 +768,6 @@ public class DeletionQueueManager {
         }
         return false; // Il bioma è interamente coperto da altri biomi o roccia
     }
-
     public static void resetSunBurntWaves(ServerLevel level) {
         ResourceKey<Level> dim = level.dimension();
         Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
@@ -803,7 +781,6 @@ public class DeletionQueueManager {
             }
         }
     }
-
     public static void resetFloodWaves(ServerLevel level) {
         ResourceKey<Level> dim = level.dimension();
         Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
@@ -817,7 +794,6 @@ public class DeletionQueueManager {
             }
         }
     }
-
     public static SunBurnStage getSunBurnStage(long elapsedTicks) {
         if (elapsedTicks < 20L * 60L) return SunBurnStage.FIRE; //Dura 60 secondi
         if (elapsedTicks < 20L * 105L) return SunBurnStage.BURNING; //Dura altri 45
@@ -846,7 +822,7 @@ public class DeletionQueueManager {
         }
         return null;
     }
-    private static boolean tryPlaceAdjacentFire(ServerLevel level, BlockPos pos) {
+    private static void tryPlaceAdjacentFire(ServerLevel level, BlockPos pos) {
         int flags = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS | Block.UPDATE_KNOWN_SHAPE;
 
         for (Direction dir : Direction.values()) {
@@ -858,10 +834,9 @@ public class DeletionQueueManager {
             BlockState fire = Blocks.FIRE.defaultBlockState();
             if (fire.canSurvive(level, firePos)) {
                 level.setBlock(firePos, fire, flags);
-                return true;
+                return;
             }
         }
-        return false;
     }
     private static boolean hasAdjacentFire(ServerLevel level, BlockPos pos) {
         for (Direction dir : Direction.values()) {
@@ -1260,7 +1235,6 @@ public class DeletionQueueManager {
         process(level, RuntimeBuffers.DYNAMIC_ORDER, RuntimeBuffers.DYNAMIC_STATES, passes, true);
         variables.syncData(level, true, false);
     }
-
 
     public static boolean hasChunksInRadius(ServerLevel level, ChunkPos center, int radius) {
         Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(level.dimension());
