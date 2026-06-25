@@ -3,7 +3,7 @@ package net.calca.biomesofcataclysms.command;
 
 import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerLevel;
@@ -22,7 +22,7 @@ public class OptimizationBranchCommands extends ModCommandsCommon {
 
     private static int pcPowerMax(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         setPcPowerMsg(5, arguments.getSource().getServer(), world);
 
@@ -36,7 +36,7 @@ public class OptimizationBranchCommands extends ModCommandsCommon {
     }
     private static int pcPowerExtreme(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         setPcPowerMsg(4, arguments.getSource().getServer(), world);
 
@@ -50,7 +50,7 @@ public class OptimizationBranchCommands extends ModCommandsCommon {
     }
     private static int pcPowerHigh(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         setPcPowerMsg(3, arguments.getSource().getServer(), world);
 
@@ -64,7 +64,7 @@ public class OptimizationBranchCommands extends ModCommandsCommon {
     }
     private static int pcPowerMedium(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         setPcPowerMsg(2, arguments.getSource().getServer(), world);
 
@@ -78,7 +78,7 @@ public class OptimizationBranchCommands extends ModCommandsCommon {
     }
     private static int pcPowerLow(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         setPcPowerMsg(1, arguments.getSource().getServer(), world);
 
@@ -92,7 +92,7 @@ public class OptimizationBranchCommands extends ModCommandsCommon {
     }
     private static int pcPowerPotato(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         setPcPowerMsg(0, arguments.getSource().getServer(), world);
 

@@ -4,7 +4,7 @@ package net.calca.biomesofcataclysms.command;
 import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -27,7 +27,7 @@ public class DataRecoveryBranchCommands extends ModCommandsCommon {
 
     private static int setCataclysmToFlood(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
         ServerPlayer player = arguments.getSource().getPlayer();
         assert player != null;
         if (variables.mode != 1){

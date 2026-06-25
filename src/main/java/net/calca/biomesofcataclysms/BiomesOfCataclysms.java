@@ -1,6 +1,6 @@
 package net.calca.biomesofcataclysms;
 
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -35,29 +35,13 @@ public class BiomesOfCataclysms {
 
     public BiomesOfCataclysms(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
-        modEventBus.addListener(this::commonSetup);
         NeoForge.EVENT_BUS.register(this);
-        modEventBus.addListener(this::addCreative);
         modEventBus.addListener(this::registerNetworking);
 
-        ModVariables.ATTACHMENT_TYPES.register(modEventBus);
+        PersistentData.ATTACHMENT_TYPES.register(modEventBus);
 
     }
 
-    private void commonSetup(FMLCommonSetupEvent event) {
-
-    }
-
-    // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
-
-    }
-
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-
-    }
     private static boolean networkingRegistered = false;
     private static final Map<CustomPacketPayload.Type<?>, NetworkMessage<?>> MESSAGES = new HashMap<>();
 

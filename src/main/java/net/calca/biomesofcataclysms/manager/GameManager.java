@@ -1,8 +1,9 @@
-package net.calca.biomesofcataclysms.data;
+package net.calca.biomesofcataclysms.manager;
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -15,14 +16,14 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.biome.Biomes;
 
 public class GameManager {
-    public static void biomesCheck(Player player, ServerLevel level, ModVariables.MapVariables vars){
+    public static void biomesCheck(Player player, ServerLevel level, PersistentData.MapVariables vars){
         allNetherBiomesDeleted(player, level, vars);
         allEndBiomesDeleted(player, level, vars);
         allOverworldBiomesDeleted(player, level, vars);
         allBiomesDeleted(player, level, vars);
     }
 
-    private static void allNetherBiomesDeleted(Player player, ServerLevel level, ModVariables.MapVariables vars){
+    private static void allNetherBiomesDeleted(Player player, ServerLevel level, PersistentData.MapVariables vars){
         if (!vars.allNetherBiomesHitShouldNotify) return;
         if (vars.deletedBiomes.contains(Biomes.NETHER_WASTES.location().toString())
                 && vars.deletedBiomes.contains(Biomes.SOUL_SAND_VALLEY.location().toString())
@@ -47,7 +48,7 @@ public class GameManager {
         }
 
     }
-    private static void allEndBiomesDeleted(Player player, ServerLevel level, ModVariables.MapVariables vars){
+    private static void allEndBiomesDeleted(Player player, ServerLevel level, PersistentData.MapVariables vars){
         if (!vars.allEndBiomesHitShouldNotify) return;
         if (vars.deletedBiomes.contains(Biomes.END_HIGHLANDS.location().toString())
                 && vars.deletedBiomes.contains(Biomes.END_BARRENS.location().toString())
@@ -73,7 +74,7 @@ public class GameManager {
 
 
     }
-    private static void allOverworldBiomesDeleted(Player player, ServerLevel level, ModVariables.MapVariables vars){
+    private static void allOverworldBiomesDeleted(Player player, ServerLevel level, PersistentData.MapVariables vars){
         if (!vars.allOverworldBiomesHitShouldNotify) return;
         if (vars.deletedBiomes.containsAll(vars.overworldBiomeList)){
             BiomesOfCataclysms.queueServerWork(40, () -> {
@@ -94,7 +95,7 @@ public class GameManager {
 
 
     }
-    private static void allBiomesDeleted(Player player, ServerLevel level, ModVariables.MapVariables vars){
+    private static void allBiomesDeleted(Player player, ServerLevel level, PersistentData.MapVariables vars){
         if (vars.deletedBiomes.size() == vars.totalBiomes){
             BiomesOfCataclysms.queueServerWork(80, () -> {
 

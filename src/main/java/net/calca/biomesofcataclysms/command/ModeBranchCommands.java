@@ -3,7 +3,7 @@ package net.calca.biomesofcataclysms.command;
 import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -26,7 +26,7 @@ public class ModeBranchCommands extends ModCommandsCommon {
 
     private static int setModeClassic(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())){
             return 0;
         }
@@ -63,7 +63,7 @@ public class ModeBranchCommands extends ModCommandsCommon {
     }
     private static int setModeApocalypse(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())){
             return 0;

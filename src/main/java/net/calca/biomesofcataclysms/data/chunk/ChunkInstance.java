@@ -16,42 +16,39 @@ import net.minecraft.world.level.Level;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ChunkMod {
+public class ChunkInstance {
     public final ResourceKey<Level> dimension;
     public final ChunkPos pos;
     public Set<String> biomeIds = new HashSet<>();
     public Set<String> clearedBiomes = new HashSet<>();
     public String activeBiome = null;
     public int activeBiomeStep = 0;
+
     public int lastFloodHeight = -64;
 
-    public boolean initialWave;   // fa parte dell'onda iniziale
-    public boolean dynamic;       // scoperto dal radar
-    public boolean instant;       // distruzione istantanea o no
+    public boolean initialWave;   // is it queued in the INITIAL QUEUE?
+    public boolean dynamic;       // is it queued in the DYNAMIC QUEUE?
 
     public long firstSeenTick;
-    public long readyAtTick;
-    public int speedTier;         // opzionale: velocità di distruzione
     public ChunkState state = ChunkState.QUEUED;
-    public int step = 0;          // 0..3 per i quarti del chunk
 
     public long lastSeenTick;
     public double priorityScore;
 
-    public ChunkMod(ResourceKey<Level> dimension, ChunkPos pos, ServerLevel serverLevel) {
+    public ChunkInstance(ResourceKey<Level> dimension, ChunkPos pos, ServerLevel serverLevel) {
         this.dimension = dimension;
         this.pos = pos;
 
         this.biomeIds = collectBiomesInChunk(serverLevel, pos);
         this.firstSeenTick = serverLevel.getGameTime();
-        this.readyAtTick = this.firstSeenTick + 60; // 1 secondo circa
     }
 
-    private ChunkMod(ResourceKey<Level> dimension, ChunkPos pos) {
+    private ChunkInstance(ResourceKey<Level> dimension, ChunkPos pos) {
         this.dimension = dimension;
         this.pos = pos;
     }
 
+    //This method is used to collect all biomes inside a specific chunk (a chunk can contain various biomes).
     private Set<String> collectBiomesInChunk(ServerLevel level, ChunkPos pos) {
         Set<String> biomes = new HashSet<>();
 
@@ -86,12 +83,8 @@ public class ChunkMod {
         int lastFloodHeightCopy;
         boolean initialWaveCopy;
         boolean dynamicCopy;
-        boolean instantCopy;
         long firstSeenTickCopy;
-        long readyAtTickCopy;
-        int speedTierCopy;
         ChunkState stateCopy;
-        int stepCopy;
         long lastSeenTickCopy;
         double priorityScoreCopy;
 
@@ -103,12 +96,8 @@ public class ChunkMod {
             lastFloodHeightCopy = lastFloodHeight;
             initialWaveCopy = initialWave;
             dynamicCopy = dynamic;
-            instantCopy = instant;
             firstSeenTickCopy = firstSeenTick;
-            readyAtTickCopy = readyAtTick;
-            speedTierCopy = speedTier;
             stateCopy = state;
-            stepCopy = step;
             lastSeenTickCopy = lastSeenTick;
             priorityScoreCopy = priorityScore;
         }
@@ -137,20 +126,16 @@ public class ChunkMod {
         tag.putInt("lastFloodHeight", lastFloodHeightCopy);
         tag.putBoolean("initialWave", initialWaveCopy);
         tag.putBoolean("dynamic", dynamicCopy);
-        tag.putBoolean("instant", instantCopy);
 
         tag.putLong("firstSeenTick", firstSeenTickCopy);
-        tag.putLong("readyAtTick", readyAtTickCopy);
-        tag.putInt("speedTier", speedTierCopy);
         tag.putString("state", stateCopy.name());
-        tag.putInt("step", stepCopy);
         tag.putLong("lastSeenTick", lastSeenTickCopy);
         tag.putDouble("priorityScore", priorityScoreCopy);
 
         return tag;
     }
 
-    public static ChunkMod load(CompoundTag tag, HolderLookup.Provider provider) {
+    public static ChunkInstance load(CompoundTag tag, HolderLookup.Provider provider) {
         ResourceKey<Level> dimension = ResourceKey.create(
                 Registries.DIMENSION,
                 ResourceLocation.parse(tag.getString("dimension"))
@@ -158,7 +143,7 @@ public class ChunkMod {
 
         ChunkPos pos = new ChunkPos(tag.getLong("chunkPos"));
 
-        ChunkMod mod = new ChunkMod(dimension, pos);
+        ChunkInstance mod = new ChunkInstance(dimension, pos);
 
         mod.biomeIds.clear();
         ListTag biomeIdsList = tag.getList("biomeIds", Tag.TAG_STRING);
@@ -178,16 +163,12 @@ public class ChunkMod {
         mod.lastFloodHeight = tag.getInt("lastFloodHeight");
         mod.initialWave = tag.getBoolean("initialWave");
         mod.dynamic = tag.getBoolean("dynamic");
-        mod.instant = tag.getBoolean("instant");
 
         mod.firstSeenTick = tag.getLong("firstSeenTick");
-        mod.readyAtTick = tag.getLong("readyAtTick");
-        mod.speedTier = tag.getInt("speedTier");
 
         String stateName = tag.getString("state");
         mod.state = stateName.isEmpty() ? ChunkState.QUEUED : ChunkState.valueOf(stateName);
 
-        mod.step = tag.getInt("step");
         mod.lastSeenTick = tag.getLong("lastSeenTick");
         mod.priorityScore = tag.getDouble("priorityScore");
 
@@ -197,5 +178,24 @@ public class ChunkMod {
 }
 
 /*
-Ho provato, nel momento in cui venogno usate le liste mi da questo errore: Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Perche cosa hai sbagliato?
+Ho provato, nel momento in cui vengono usate le liste mi da questo errore:
+Caused by: java.lang.RuntimeException: Failed encoding custom payload biomesofcataclysms:saved_data_sync:
+java.util.ConcurrentModificationException Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException:
+Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException Caused by:
+ava.util.ConcurrentModificationException Caused by: java.lang.RuntimeException:
+Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException
+Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException:
+Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException
+Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException:
+Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException
+Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException:
+Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException
+Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException:
+Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException
+Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException:
+Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException
+Caused by: java.util.ConcurrentModificationException Caused by: java.lang.RuntimeException:
+Failed encoding custom payload biomesofcataclysms:saved_data_sync: java.util.ConcurrentModificationException
+Caused by: java.util.ConcurrentModificationException
+Perche cosa hai sbagliato?
  */

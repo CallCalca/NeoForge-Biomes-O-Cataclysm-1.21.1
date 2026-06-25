@@ -3,8 +3,8 @@ package net.calca.biomesofcataclysms.command.common;
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
-import net.calca.biomesofcataclysms.data.ModVariables;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
@@ -17,7 +17,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.LevelAccessor;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 import static net.calca.biomesofcataclysms.ModUtils.decodeCataclysmFromEnum;
 
@@ -25,7 +24,7 @@ public class ModCommandsCommon {
     protected static final String PREFIX = "biomesOfCataclysms";
     protected static final int PERMISION_LEVEL = 4;
 
-    protected static void gameAboutToStartSettingsMessage(LevelAccessor levelAccessor, ServerPlayer serverPlayer, ModVariables.MapVariables variables){
+    protected static void gameAboutToStartSettingsMessage(LevelAccessor levelAccessor, ServerPlayer serverPlayer, PersistentData.MapVariables variables){
             ModUtils.sendChatMessage((ServerLevel) levelAccessor, Component.translatable("command.biomesofcataclysms.aboutToStart")
                     .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Confirm
 
@@ -120,7 +119,7 @@ public class ModCommandsCommon {
 
             ModUtils.sendLocalChatMessageTo(serverPlayer, warning.append(msg)); //Confirm
     }
-    protected static String decodePcPowerToString(ModVariables.MapVariables variables){
+    protected static String decodePcPowerToString(PersistentData.MapVariables variables){
         MutableComponent returnValue;
         if (variables.pcPower >= 0 && variables.pcPower <= 5){
             returnValue = Component.translatable("command.biomesofcataclysms.pcPower." + variables.pcPower);
@@ -131,7 +130,7 @@ public class ModCommandsCommon {
         return returnValue.getString();
     }
 
-    protected static MutableComponent decodeModeToString(ModVariables.MapVariables variables){
+    protected static MutableComponent decodeModeToString(PersistentData.MapVariables variables){
         if (variables.mode == 0){
             return Component.translatable("command.biomesofcataclysms.classicMode").withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
         }else if (variables.mode == 1){
@@ -140,7 +139,7 @@ public class ModCommandsCommon {
             return Component.literal("Unknow Error: Mode = Null").withStyle(ChatFormatting.DARK_RED);
         }
     }
-    protected static boolean changeSettingsCheck(ModVariables.MapVariables variables, Player player){
+    protected static boolean changeSettingsCheck(PersistentData.MapVariables variables, Player player){
         if ((variables.state == 2 || ModUtils.isAGameAlreadyStarted(variables))){
             MutableComponent msg = Component.translatable("command.biomesofcataclysms.cannotChangeSettingsWhileInGame")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD);
@@ -208,7 +207,7 @@ public class ModCommandsCommon {
         }
     }
 
-    protected static void settingUpPcPowerComponents(ModVariables.MapVariables variables, ServerLevel world, MinecraftServer server){
+    protected static void settingUpPcPowerComponents(PersistentData.MapVariables variables, ServerLevel world, MinecraftServer server){
         if (variables.pcPower == 0){ //Potato
             variables.radius = 8;
             variables.destructionSpeed = 0.25;
@@ -236,7 +235,7 @@ public class ModCommandsCommon {
         Minecraft.getInstance().options.renderDistance().set(variables.radius);
         server.getPlayerList().setViewDistance(variables.radius);
     }
-    protected static void settingUpApocalypseMode(ModVariables.MapVariables variables, ServerLevel level){
+    protected static void settingUpApocalypseMode(PersistentData.MapVariables variables, ServerLevel level){
         AllCataclysms[] values = AllCataclysms.values();
         AllCataclysms random =
                 values[1 + new java.util.Random().nextInt(values.length - 1)];
@@ -272,10 +271,10 @@ public class ModCommandsCommon {
 
 
     public static class DataRecovery{
-        public static ModVariables.MapVariables variables;
+        public static PersistentData.MapVariables variables;
         public static ServerLevel serverLevel;
 
-        public DataRecovery(ModVariables.MapVariables variables, ServerLevel serverLevel){
+        public DataRecovery(PersistentData.MapVariables variables, ServerLevel serverLevel){
             DataRecovery.variables = variables;
             DataRecovery.serverLevel = serverLevel;
         }

@@ -1,6 +1,6 @@
 package net.calca.biomesofcataclysms.bar;
 
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -8,7 +8,7 @@ import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.player.Player;
 
 public class ProgressBarManager {
-    public static void initializeOnServerStart(ModVariables.MapVariables variables, ServerLevel serverLevel){
+    public static void initializeOnServerStart(PersistentData.MapVariables variables, ServerLevel serverLevel){
             TimerProgressBar.initialize(variables, serverLevel);
     }
 
@@ -27,11 +27,11 @@ public class ProgressBarManager {
         );
 
         public static void initialize(ServerLevel serverLevel){
-            ModVariables.MapVariables variables = ModVariables.MapVariables.get(serverLevel);
+            PersistentData.MapVariables variables = PersistentData.MapVariables.get(serverLevel);
             initialize(variables, serverLevel);
         }
 
-        public static void initialize(ModVariables.MapVariables variables, ServerLevel serverLevel){
+        public static void initialize(PersistentData.MapVariables variables, ServerLevel serverLevel){
             int maxValue = (variables.totalBiomes) * variables.tickDelayBetweenCataclysm;
             TIMER_PROGRESS_BAR.setMaxValue(maxValue);
             System.out.println("MAX:" + maxValue/20/60);
@@ -54,7 +54,7 @@ public class ProgressBarManager {
 
         }
 
-        public static void setColor(ModVariables.MapVariables variables){
+        public static void setColor(PersistentData.MapVariables variables){
             if (variables.biomesAffected == variables.totalBiomes || (variables.timer <= 0 && variables.timer != -1)){
                 TIMER_PROGRESS_BAR.setColor(BossEvent.BossBarColor.RED);
                 TIMER_PROGRESS_BAR.setProgress(0.0f);
@@ -65,7 +65,7 @@ public class ProgressBarManager {
             }
         }
 
-        public static void setTitle(ModVariables.MapVariables variables){
+        public static void setTitle(PersistentData.MapVariables variables){
             int totalSeconds = variables.timer / 20;
             int minutes = totalSeconds / 60;
             int seconds = totalSeconds % 60;
@@ -84,10 +84,10 @@ public class ProgressBarManager {
         }
 
         public static void tick(ServerLevel serverLevel){
-            ModVariables.MapVariables variables = ModVariables.MapVariables.get(serverLevel);
+            PersistentData.MapVariables variables = PersistentData.MapVariables.get(serverLevel);
             tick(variables);
         }
-        public static void tick(ModVariables.MapVariables variables){
+        public static void tick(PersistentData.MapVariables variables){
             setTitle(variables);
             TIMER_PROGRESS_BAR.setRemainingTicks(variables.timer);
         }
@@ -102,11 +102,11 @@ public class ProgressBarManager {
         );
 
         public static void initialize(ServerLevel serverLevel){
-            ModVariables.MapVariables variables = ModVariables.MapVariables.get(serverLevel);
+            PersistentData.MapVariables variables = PersistentData.MapVariables.get(serverLevel);
             initialize(variables, serverLevel);
         }
 
-        public static void initialize(ModVariables.MapVariables variables, ServerLevel serverLevel){
+        public static void initialize(PersistentData.MapVariables variables, ServerLevel serverLevel){
             int maxValue = (variables.totalBiomes) * variables.tickDelayBetweenCataclysm;
             SUN_STORM_PROGRESS_BAR.setMaxValue(maxValue);
             System.out.println("MAX:" + maxValue/20/60);
@@ -129,7 +129,7 @@ public class ProgressBarManager {
 
         }
 
-        public static void setColor(ModVariables.MapVariables variables){
+        public static void setColor(PersistentData.MapVariables variables){
             if (variables.biomesAffected == variables.totalBiomes || (variables.timer <= 0 && variables.timer != -1)){
                 SUN_STORM_PROGRESS_BAR.setColor(BossEvent.BossBarColor.RED);
                 SUN_STORM_PROGRESS_BAR.setProgress(0.0f);
@@ -140,7 +140,7 @@ public class ProgressBarManager {
             }
         }
 
-        public static void setTitle(ModVariables.MapVariables variables){
+        public static void setTitle(PersistentData.MapVariables variables){
             int totalSeconds = variables.timer / 20;
             int minutes = totalSeconds / 60;
             int seconds = totalSeconds % 60;
@@ -159,10 +159,10 @@ public class ProgressBarManager {
         }
 
         public static void tick(ServerLevel serverLevel){
-            ModVariables.MapVariables variables = ModVariables.MapVariables.get(serverLevel);
+            PersistentData.MapVariables variables = PersistentData.MapVariables.get(serverLevel);
             tick(variables);
         }
-        public static void tick(ModVariables.MapVariables variables){
+        public static void tick(PersistentData.MapVariables variables){
             setTitle(variables);
             SUN_STORM_PROGRESS_BAR.setRemainingTicks(variables.timer);
         }

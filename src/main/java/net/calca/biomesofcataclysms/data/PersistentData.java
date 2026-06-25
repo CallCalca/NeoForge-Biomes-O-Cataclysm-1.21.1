@@ -2,12 +2,9 @@ package net.calca.biomesofcataclysms.data;
 
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
-import net.calca.biomesofcataclysms.ModUtils;
-import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
-import net.calca.biomesofcataclysms.data.chunk.ChunkMod;
+import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
+import net.calca.biomesofcataclysms.manager.ChunkProcessorManager;
 import net.calca.biomesofcataclysms.data.chunk.ChunkState;
-import net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager;
-import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.ListTag;
@@ -46,11 +43,11 @@ import net.minecraft.core.HolderLookup;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager.DataSavingHelper.*;
+import static net.calca.biomesofcataclysms.data.DataSavingHelper.*;
 
 
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
-public class ModVariables {
+public class PersistentData {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, BiomesOfCataclysms.MODID);
 
     @SubscribeEvent
@@ -64,59 +61,9 @@ public class ModVariables {
         public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
             if (event.getEntity() instanceof ServerPlayer player) {
                 SavedData mapdata = MapVariables.get(event.getEntity().level());
-                SavedData worlddata = WorldVariables.get(event.getEntity().level());
                 if (mapdata != null) { //No use out of this class
                     //PacketDistributor.sendToPlayer(player, new SavedDataSyncMessage(0, mapdata));
                 }
-                if (worlddata != null) { //No need to sync: all logic is server side
-                    //PacketDistributor.sendToPlayer(player, new SavedDataSyncMessage(1, worlddata));
-                }
-            }
-        }
-
-        @SubscribeEvent
-        public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-            if (event.getEntity() instanceof ServerPlayer player) {
-                SavedData worlddata = WorldVariables.get(event.getEntity().level());
-                if (worlddata != null)
-                    PacketDistributor.sendToPlayer(player, new SavedDataSyncMessage(1, worlddata));
-            }
-        }
-    }
-
-
-
-
-    public static class WorldVariables extends SavedData {
-        public static final String DATA_NAME = "biomesofcataclysm_worldvars";
-
-        public static WorldVariables load(CompoundTag tag, HolderLookup.Provider lookupProvider) {
-            WorldVariables data = new WorldVariables();
-            data.read(tag, lookupProvider);
-            return data;
-        }
-
-        public void read(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
-        }
-
-        @Override
-        public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
-            return nbt;
-        }
-
-        public void syncData(LevelAccessor world) {
-            this.setDirty();
-            if (world instanceof ServerLevel level)
-                PacketDistributor.sendToPlayersInDimension(level, new SavedDataSyncMessage(1, this));
-        }
-
-        static WorldVariables clientSide = new WorldVariables();
-
-        public static WorldVariables get(LevelAccessor world) {
-            if (world instanceof ServerLevel level) {
-                return level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(WorldVariables::new, WorldVariables::load), DATA_NAME);
-            } else {
-                return clientSide;
             }
         }
     }
@@ -125,14 +72,13 @@ public class ModVariables {
 
     public static class MapVariables extends SavedData {
         public static final String DATA_NAME = "biomesofcataclysms_mapvars";
-        // |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        // runtime cache: la lasci pure fuori dal salvataggio
-        public final Map<ResourceKey<Level>, Map<Long, ChunkMod>> chunks = new HashMap<>();
+
+        public final Map<ResourceKey<Level>, Map<Long, ChunkInstance>> chunks = new HashMap<>();
         public final Map<ResourceKey<Level>, ArrayDeque<Long>> initialOrder = new HashMap<>();
         public final Map<ResourceKey<Level>, ArrayDeque<Long>> dynamicOrder = new HashMap<>();
 
-        public final Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> initialStates = new HashMap<>();
-        public final Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> dynamicStates = new HashMap<>();
+        public final Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> initialStates = new HashMap<>();
+        public final Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> dynamicStates = new HashMap<>();
         public final Map<String, Integer> floodedHeights = new HashMap<>();
         public final Map<String, Long> sunBurnStartTicks = new HashMap<>();
 
@@ -143,16 +89,18 @@ public class ModVariables {
         public boolean allOverworldBiomesHitShouldNotify = true;
         public int totalBiomes = 0;
         public List<String> shuffledBiomes = new ArrayList<>(); // Coda dei prossimi biomi
-        public List<String> overworldBiomeList = new ArrayList<>(); // Coda dei prossimi biomi
+        public List<String> overworldBiomeList = new ArrayList<>(); // lista dei biomi dell' over world
         public Set<String> deletedBiomes = new HashSet<>();    // Registro dei biomi già cancellati
-        public Set<String> processedChunks = new HashSet<>();
+        public Set<String> processedChunks = new HashSet<>(); //Chunk processati
 
         public int biomesToAffect = totalBiomes;
-        public int biomesAffected = 0;
+        public int biomesAffected = deletedBiomes.size();
 
+        //Optimization
         public int pcPower = 1;
         public int radius = 16;
         public double destructionSpeed = 1;
+        //---
 
         public int mode = 0; //0 = Biom Remover: chunks of a given biome will get completely deleted;
                             // 1 = Apocalypse: random disasters will affect all chunks of a given biome.
@@ -165,7 +113,7 @@ public class ModVariables {
         //4 = Hardcore:       disaster will "as fast as possible" affect chucks, No warning, biome + cataclysm are hidden
 
         public int tickDelayBetweenCataclysm = 5*60*20; // 6000 = 5 minutes default
-        public int timer = -1;//When -1 timer is disabled
+        public int timer = -1;//When -1 -> timer is disabled
         public int state = 0; //0 = paused; 1 = paused (to confirm); 2 = playing;
         public int dataCondition = 0; //0 = data is fine; 1 = data is corrupted; -1 = data needs to be analyzed;
 
@@ -193,7 +141,7 @@ public class ModVariables {
             CompoundTag chunksRoot = nbt.getCompound("chunksRoot");
             for (String dimId : chunksRoot.getAllKeys()) {
                 ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimId));
-                Map<Long, ChunkMod> dimChunks = new HashMap<>();
+                Map<Long, ChunkInstance> dimChunks = new HashMap<>();
 
                 CompoundTag dimTag = chunksRoot.getCompound(dimId);
                 ListTag chunksList = dimTag.getList("chunks", Tag.TAG_COMPOUND);
@@ -201,7 +149,7 @@ public class ModVariables {
                 for (int i = 0; i < chunksList.size(); i++) {
                     CompoundTag chunkTag = chunksList.getCompound(i);
                     long packedPos = chunkTag.getLong("packedPos");
-                    ChunkMod mod = ChunkMod.load(chunkTag, lookupProvider);
+                    ChunkInstance mod = ChunkInstance.load(chunkTag, lookupProvider);
                     dimChunks.put(packedPos, mod);
                 }
                 chunks.put(dim, dimChunks);
@@ -275,11 +223,11 @@ public class ModVariables {
         @Override
         public CompoundTag save(CompoundTag nbt, HolderLookup.Provider lookupProvider) {
 
-            Map<ResourceKey<Level>, Map<Long, ChunkMod>> chunksCopy;
+            Map<ResourceKey<Level>, Map<Long, ChunkInstance>> chunksCopy;
             Map<ResourceKey<Level>, ArrayDeque<Long>> initialOrderCopy;
             Map<ResourceKey<Level>, ArrayDeque<Long>> dynamicOrderCopy;
-            Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> initialStatesCopy;
-            Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> dynamicStatesCopy;
+            Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> initialStatesCopy;
+            Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> dynamicStatesCopy;
             Map<String, Integer> floodedHeightsCopy;
             Map<String, Long> sunBurnStartTicksCopy;
 
@@ -492,6 +440,7 @@ public class ModVariables {
 
             this.setDirty();
         }
+        //Only used in debug mode
         public void forceNextBiome(String targetBiomeId, ServerLevel level) {
             int index = this.shuffledBiomes.indexOf(targetBiomeId);
 
@@ -521,8 +470,7 @@ public class ModVariables {
             this.syncData(level, true, false);
         }
 
-        // Aggiorna anche scanContinuous per usare la logica a onda più leggera
-        // Sostituisci questo metodo in MapVariables
+        //Scans around to check if there are any missed/corrupted chunk. This method generates an area around the player based on the radius
         public void scanContinuous(ServerLevel level) {
             if (this.deletedBiomes.isEmpty()) return;
             List<ServerPlayer> players = level.players().stream()
@@ -543,7 +491,7 @@ public class ModVariables {
                         if (!level.hasChunk(targetPos.x, targetPos.z)) continue;
 
                         String chunkKey = targetPos.x + "," + targetPos.z + "," + dimKey;
-                        ChunkMod mod = DeletionQueueManager.getOrCreateChunkMod(level, targetPos);
+                        ChunkInstance mod = ChunkProcessorManager.getOrCreateChunkMod(level, targetPos);
 
                         // Se il chunk è già in lavorazione o già in una coda, non fare nulla
                         if (mod.initialWave || mod.dynamic || mod.state == ChunkState.PROCESSING) {
@@ -567,7 +515,7 @@ public class ModVariables {
                         // -------------------------
 
                         this.setDirty();
-                        DeletionQueueManager.registerDynamicChunk(level, targetPos);
+                        ChunkProcessorManager.registerDynamicChunk(level, targetPos);
                     }
                 }
 
@@ -595,7 +543,7 @@ public class ModVariables {
                         long packed = targetPos.toLong();
                         if (!foundKeys.add(packed)) continue;
 
-                        ChunkMod mod = DeletionQueueManager.getOrCreateChunkMod(level, targetPos);
+                        ChunkInstance mod = ChunkProcessorManager.getOrCreateChunkMod(level, targetPos);
 
                         if (mod.biomeIds.contains(targetBiomeId)) {
                             foundChunks.add(targetPos);
@@ -614,13 +562,18 @@ public class ModVariables {
 
             for (ChunkPos pos : foundChunks) {
                 if (priority) {
-                    DeletionQueueManager.registerDynamicChunk(level, pos);
+                    ChunkProcessorManager.registerDynamicChunk(level, pos);
                 } else {
-                    DeletionQueueManager.registerInitialChunk(level, pos);
+                    ChunkProcessorManager.registerInitialChunk(level, pos);
                 }
             }
         }
 
+        //The 3 different kind of destruction:
+        // 1. Instant -> starts from the nearest chunk to the player
+        // 2. Random -> picks random chunks
+        // 3. Surrounding -> starts from the farthest chunk.
+        //These method are called exclusively for the chunks queue in the INITIAL QUEUE, not the dynamic
         private void instantDestruction(List<ChunkPos> foundChunks, List<ServerPlayer> players, ServerLevel level){
             // --- EFFETTO ONDA CORRETTO (Dal più vicino al più lontano) ---
             foundChunks.sort(Comparator.comparingDouble(pos -> {
@@ -633,7 +586,7 @@ public class ModVariables {
             }));
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                DeletionQueueManager.registerDynamicChunk(level, pos);
+                ChunkProcessorManager.registerDynamicChunk(level, pos);
             }
         }
         private void randomChunkDestruction(List<ChunkPos> foundChunks, ServerLevel level){
@@ -642,7 +595,7 @@ public class ModVariables {
 
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                DeletionQueueManager.registerInitialChunk(level, pos);
+                ChunkProcessorManager.registerInitialChunk(level, pos);
             }
         }
         private void surroundingChunkDestruction(List<ChunkPos> foundChunks, List<ServerPlayer> players, ServerLevel level) {
@@ -668,7 +621,7 @@ public class ModVariables {
 
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                DeletionQueueManager.registerInitialChunk(level, pos);
+                ChunkProcessorManager.registerInitialChunk(level, pos);
             }
         }
 
@@ -693,7 +646,7 @@ public class ModVariables {
 
 
             if (changed) {
-                DeletionQueueManager.resetFloodWaves(level);
+                ChunkProcessorManager.resetFloodWaves(level);
                 this.setDirty();
             }
             return changed;
@@ -762,11 +715,10 @@ public class ModVariables {
             CompoundTag nbt = buffer.readNbt();
             SavedData data = null;
             if (nbt != null) {
-                data = dataType == 0 ? new MapVariables() : new WorldVariables();
+                if (dataType == 0)
+                    data = new MapVariables();
                 if (data instanceof MapVariables mapVariables)
                     mapVariables.read(nbt, buffer.registryAccess());
-                else if (data instanceof WorldVariables worldVariables)
-                    worldVariables.read(nbt, buffer.registryAccess());
             }
             return new SavedDataSyncMessage(dataType, data);
         });
@@ -781,9 +733,7 @@ public class ModVariables {
                 context.enqueueWork(() -> {
                     if (message.dataType == 0)
                         MapVariables.clientSide.read(message.data.save(new CompoundTag(), context.player().registryAccess()), context.player().registryAccess());
-                    else
-                        WorldVariables.clientSide.read(message.data.save(new CompoundTag(), context.player().registryAccess()), context.player().registryAccess());
-                }).exceptionally(e -> {
+                    }).exceptionally(e -> {
                     context.connection().disconnect(Component.literal(e.getMessage()));
                     return null;
                 });

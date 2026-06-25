@@ -4,13 +4,13 @@ import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
-import net.calca.biomesofcataclysms.data.GameManager;
+import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.RuntimeData;
+import net.calca.biomesofcataclysms.manager.GameManager;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.data.cataclysm.sunburn.SunBurnStage;
-import net.calca.biomesofcataclysms.data.chunk.ChunkMod;
-import net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager;
-import net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager.RuntimeBuffers;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
+import net.calca.biomesofcataclysms.manager.ChunkProcessorManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
@@ -50,7 +50,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.*;
 
-import static net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager.getSunBurnStage;
+import static net.calca.biomesofcataclysms.manager.ChunkProcessorManager.getSunBurnStage;
 
 // Done with the help of https://github.com/CoFH/CoFHCore/blob/1.19.x/src/main/java/cofh/core/event/AreaEffectEvents.java
 // Don't be a jerk License
@@ -58,7 +58,7 @@ import static net.calca.biomesofcataclysms.data.chunk.DeletionQueueManager.getSu
 public class ModServerEvents {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
-            ModVariables.MapVariables variables = ModVariables.MapVariables.get(event.getServer().overworld());
+            PersistentData.MapVariables variables = PersistentData.MapVariables.get(event.getServer().overworld());
             if (variables.state == 2){ //Game data might be corrupted: The server was not shut down correctly last time.
                 variables.dataCondition = 2;
                 variables.syncData(event.getServer().overworld(), true, false);
@@ -67,23 +67,23 @@ public class ModServerEvents {
             for (ServerLevel serverLevel : event.getServer().getAllLevels()){
                 ProgressBarManager.initializeOnServerStart(variables, serverLevel);
             }
-            loadRuntimeFromSaved(event.getServer().overworld());
+            loadPersistentToRuntime(event.getServer().overworld());
     }
-    public static void loadRuntimeFromSaved(ServerLevel server) {
-        ModVariables.MapVariables saved = ModVariables.MapVariables.get(server);
-        RuntimeBuffers.INITIAL_ORDER.clear();
-        RuntimeBuffers.DYNAMIC_ORDER.clear();
-        RuntimeBuffers.INITIAL_STATES.clear();
-        RuntimeBuffers.DYNAMIC_STATES.clear();
-        RuntimeBuffers.CHUNKS.clear();
+    public static void loadPersistentToRuntime(ServerLevel server) {
+        PersistentData.MapVariables saved = PersistentData.MapVariables.get(server);
+        RuntimeData.INITIAL_ORDER.clear();
+        RuntimeData.DYNAMIC_ORDER.clear();
+        RuntimeData.INITIAL_STATES.clear();
+        RuntimeData.DYNAMIC_STATES.clear();
+        RuntimeData.CHUNKS.clear();
 
-        for (var e : saved.initialOrder.entrySet()) RuntimeBuffers.INITIAL_ORDER.put(e.getKey(), new ArrayDeque<>(e.getValue()));
-        for (var e : saved.dynamicOrder.entrySet()) RuntimeBuffers.DYNAMIC_ORDER.put(e.getKey(), new ArrayDeque<>(e.getValue()));
-        for (var e : saved.initialStates.entrySet()) RuntimeBuffers.INITIAL_STATES.put(e.getKey(), copyState(e.getValue()));
-        for (var e : saved.dynamicStates.entrySet()) RuntimeBuffers.DYNAMIC_STATES.put(e.getKey(), copyState(e.getValue()));
+        for (var e : saved.initialOrder.entrySet()) RuntimeData.INITIAL_ORDER.put(e.getKey(), new ArrayDeque<>(e.getValue()));
+        for (var e : saved.dynamicOrder.entrySet()) RuntimeData.DYNAMIC_ORDER.put(e.getKey(), new ArrayDeque<>(e.getValue()));
+        for (var e : saved.initialStates.entrySet()) RuntimeData.INITIAL_STATES.put(e.getKey(), copyState(e.getValue()));
+        for (var e : saved.dynamicStates.entrySet()) RuntimeData.DYNAMIC_STATES.put(e.getKey(), copyState(e.getValue()));
         for (var dimEntry : saved.chunks.entrySet()) {
-            Map<Long, ChunkMod> dimCopy = new HashMap<>(dimEntry.getValue());
-            RuntimeBuffers.CHUNKS.put(dimEntry.getKey(), dimCopy);
+            Map<Long, ChunkInstance> dimCopy = new HashMap<>(dimEntry.getValue());
+            RuntimeData.CHUNKS.put(dimEntry.getKey(), dimCopy);
         }
         saved.syncData(server, true, false);
     }
@@ -107,20 +107,20 @@ public class ModServerEvents {
 
     }
 
-    public static void flushRuntimeToSaved(ServerLevel server) {
-        ModVariables.MapVariables saved = ModVariables.MapVariables.get(server);
+    public static void loadRuntimeToPersistent(ServerLevel server) {
+        PersistentData.MapVariables saved = PersistentData.MapVariables.get(server);
         saved.initialOrder.clear();
         saved.dynamicOrder.clear();
         saved.initialStates.clear();
         saved.dynamicStates.clear();
         saved.chunks.clear();
 
-        for (var e : RuntimeBuffers.INITIAL_ORDER.entrySet()) saved.initialOrder.put(e.getKey(), new ArrayDeque<>(e.getValue()));
-        for (var e : RuntimeBuffers.DYNAMIC_ORDER.entrySet()) saved.dynamicOrder.put(e.getKey(), new ArrayDeque<>(e.getValue()));
-        for (var e : RuntimeBuffers.INITIAL_STATES.entrySet()) saved.initialStates.put(e.getKey(), copyState(e.getValue()));
-        for (var e : RuntimeBuffers.DYNAMIC_STATES.entrySet()) saved.dynamicStates.put(e.getKey(), copyState(e.getValue()));
-        for (var dimEntry : RuntimeBuffers.CHUNKS.entrySet()) {
-            Map<Long, ChunkMod> dimCopy = new HashMap<>();
+        for (var e : RuntimeData.INITIAL_ORDER.entrySet()) saved.initialOrder.put(e.getKey(), new ArrayDeque<>(e.getValue()));
+        for (var e : RuntimeData.DYNAMIC_ORDER.entrySet()) saved.dynamicOrder.put(e.getKey(), new ArrayDeque<>(e.getValue()));
+        for (var e : RuntimeData.INITIAL_STATES.entrySet()) saved.initialStates.put(e.getKey(), copyState(e.getValue()));
+        for (var e : RuntimeData.DYNAMIC_STATES.entrySet()) saved.dynamicStates.put(e.getKey(), copyState(e.getValue()));
+        for (var dimEntry : RuntimeData.CHUNKS.entrySet()) {
+            Map<Long, ChunkInstance> dimCopy = new HashMap<>();
             for (var chunkEntry : dimEntry.getValue().entrySet()) {
                 dimCopy.put(chunkEntry.getKey(), chunkEntry.getValue());
             }
@@ -128,8 +128,8 @@ public class ModServerEvents {
         }
         saved.setDirty(); // solo salvataggio su disco
     }
-    private static DeletionQueueManager.DimensionState copyState(DeletionQueueManager.DimensionState src) {
-        DeletionQueueManager.DimensionState dst = new DeletionQueueManager.DimensionState();
+    private static ChunkProcessorManager.DimensionState copyState(ChunkProcessorManager.DimensionState src) {
+        ChunkProcessorManager.DimensionState dst = new ChunkProcessorManager.DimensionState();
         dst.currentKey = src.currentKey;
         dst.step = src.step;
         return dst;
@@ -139,7 +139,7 @@ public class ModServerEvents {
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         ServerLevel serverLevel = (ServerLevel) event.getEntity().level();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(serverLevel);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(serverLevel);
         Player player = event.getEntity();
         ProgressBarManager.addPlayerOnLogIn(player);
 
@@ -317,7 +317,7 @@ public class ModServerEvents {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
-        ModVariables.MapVariables globalVars = ModVariables.MapVariables.get(server.overworld());
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(server.overworld());
 
         if (globalVars.state != 2) return;
         AllCataclysms type = ModUtils.decodeCataclysmFromString(globalVars.cataclysm);
@@ -325,7 +325,7 @@ public class ModServerEvents {
 
         if (globalVars.tickFloodHeights(server.overworld())) {
             // Se l'altezza è cambiata, chiediamo al manager di rimettere in coda i chunk PARTIAL
-            DeletionQueueManager.wakeUpPartialChunks(server.overworld());
+            ChunkProcessorManager.wakeUpPartialChunks(server.overworld());
         }
 
         int initialDestructionSpeed = 4;
@@ -354,41 +354,41 @@ public class ModServerEvents {
                         dynamicDestructionSpeed = 1;
                         initialDestructionSpeed = 1;
                     } else if (globalVars.pcPower == 1) { //Low
-                        if (DeletionQueueManager.hasChunksInRadius(level, pPos, 8)) {
+                        if (ChunkProcessorManager.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 2;
                         } else {
                             dynamicDestructionSpeed = 1;
                         }
                         initialDestructionSpeed = 2;
                     } else if (globalVars.pcPower == 2) { //Medium
-                        if (DeletionQueueManager.hasChunksInRadius(level, pPos, 8)) {
+                        if (ChunkProcessorManager.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 3;
                         } else {
                             dynamicDestructionSpeed = 2;
                         }
                         initialDestructionSpeed = 3;
                     } else if (globalVars.pcPower == 3) { //High
-                        if (DeletionQueueManager.hasChunksInRadius(level, pPos, 8)) {
+                        if (ChunkProcessorManager.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 4;
                         } else {
                             dynamicDestructionSpeed = 2;
                         }
                         initialDestructionSpeed = 4;
                     } else if (globalVars.pcPower == 4) { // Estreme
-                        if (DeletionQueueManager.hasChunksInRadius(level, pPos, 8)) {
+                        if (ChunkProcessorManager.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 4;
-                        } else if (DeletionQueueManager.hasChunksInRadius(level, pPos, 16)) {
+                        } else if (ChunkProcessorManager.hasChunksInRadius(level, pPos, 16)) {
                             dynamicDestructionSpeed = 3;
                         } else {
                             dynamicDestructionSpeed = 1;
                         }
                         initialDestructionSpeed = 4;
                     } else if (globalVars.pcPower == 5) { // Max
-                        if (DeletionQueueManager.hasChunksInRadius(level, pPos, 8)) {
+                        if (ChunkProcessorManager.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 4;
-                        } else if (DeletionQueueManager.hasChunksInRadius(level, pPos, 16)) {
+                        } else if (ChunkProcessorManager.hasChunksInRadius(level, pPos, 16)) {
                             dynamicDestructionSpeed = 3;
-                        } else if (DeletionQueueManager.hasChunksInRadius(level, pPos, 24)) {
+                        } else if (ChunkProcessorManager.hasChunksInRadius(level, pPos, 24)) {
                             dynamicDestructionSpeed = 3;
                         } else {
                             dynamicDestructionSpeed = 2;
@@ -401,7 +401,7 @@ public class ModServerEvents {
 
                     if (globalVars.deletedBiomes.contains(biomeId)) {
                         if (server.getTickCount() % 2000 == 0) {
-                            DeletionQueueManager.rescueMissedChunks(level, 8);
+                            ChunkProcessorManager.rescueMissedChunks(level, 8);
                         }
                         break;
                     }
@@ -413,8 +413,8 @@ public class ModServerEvents {
             }
 
             if (server.getTickCount() % 20 == 0) {
-                DeletionQueueManager.pruneDynamicQueue(level);
-                DeletionQueueManager.refreshDynamicQueue(level);
+                ChunkProcessorManager.pruneDynamicQueue(level);
+                ChunkProcessorManager.refreshDynamicQueue(level);
             }
 
             if (globalVars.difficulty == 5 && dynamicDestructionSpeed > 3) {
@@ -422,16 +422,16 @@ public class ModServerEvents {
             }
 
             if (type != AllCataclysms.SUN_BURNT && type != AllCataclysms.FLOODED){
-                DeletionQueueManager.processInitialQueue(level, initialDestructionSpeed);
+                ChunkProcessorManager.processInitialQueue(level, initialDestructionSpeed);
             }else{
-                boolean queueEmpty = DeletionQueueManager.isQueueEmpty(level);
+                boolean queueEmpty = ChunkProcessorManager.isQueueEmpty(level);
                 boolean timerElapsed = (level.getGameTime() % 200 == 0); // 200 tick = 10 secondi
                 if (queueEmpty || timerElapsed) {
-                    DeletionQueueManager.resetSunBurntWaves(level);
+                    ChunkProcessorManager.resetSunBurntWaves(level);
                 }
             }
             if (globalVars.gracePeriod <= 0) {
-                DeletionQueueManager.processDynamicQueue(level, dynamicDestructionSpeed);
+                ChunkProcessorManager.processDynamicQueue(level, dynamicDestructionSpeed);
             }
         }
 
@@ -506,7 +506,7 @@ public class ModServerEvents {
 
             if (type != AllCataclysms.SUN_BURNT && type != AllCataclysms.FLOODED){
                 if (globalVars.difficulty == 0 || globalVars.difficulty == 1) {
-                    int totalChunks = RuntimeBuffers.INITIAL_ORDER.values().stream()
+                    int totalChunks = RuntimeData.INITIAL_ORDER.values().stream()
                             .mapToInt(ArrayDeque::size)
                             .sum();
                     globalVars.gracePeriod = (totalChunks / initialDestructionSpeed) * 4;
@@ -524,7 +524,7 @@ public class ModServerEvents {
                         }
                     }
                 } else if (globalVars.difficulty == 2) {
-                    int totalChunks = RuntimeBuffers.INITIAL_ORDER.values().stream()
+                    int totalChunks = RuntimeData.INITIAL_ORDER.values().stream()
                             .mapToInt(ArrayDeque::size)
                             .sum();
                     globalVars.gracePeriod = (totalChunks / 4) * 4;
@@ -552,7 +552,7 @@ public class ModServerEvents {
 
     }
 
-    private static void countDown(ModVariables.MapVariables variables, MinecraftServer server, int ticks, String nextBiome) {
+    private static void countDown(PersistentData.MapVariables variables, MinecraftServer server, int ticks, String nextBiome) {
         if (ticks >= 0 && ticks % 20 == 0) {
             int seconds = ticks / 20;
             Component cataclysm = Component.literal(variables.cataclysm).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD);
@@ -631,7 +631,7 @@ public class ModServerEvents {
         }
 
     }
-    private static void gracePeriodCheck(ModVariables.MapVariables globalVars, MinecraftServer server) {
+    private static void gracePeriodCheck(PersistentData.MapVariables globalVars, MinecraftServer server) {
         if (globalVars.graceCheckHappen) return;
         int ticks = globalVars.gracePeriod;
         if (ticks == 0) {
@@ -658,7 +658,7 @@ public class ModServerEvents {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ModVariables.MapVariables globalVars = ModVariables.MapVariables.get(Objects.requireNonNull(player.getServer()).overworld());
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(Objects.requireNonNull(player.getServer()).overworld());
         if (globalVars.difficulty == 4){
             MutableComponent message = Component.translatable("event.biomesofcataclysms.playerTick.actionbar")
                     .append(Component.literal(" "))
@@ -738,11 +738,11 @@ public class ModServerEvents {
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event){
         Player player = event.getEntity();
-        ModVariables.MapVariables globalVars = ModVariables.MapVariables.get(Objects.requireNonNull(player.getServer()).overworld());
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(Objects.requireNonNull(player.getServer()).overworld());
         playerRespawnManager(globalVars, player);
     }
 
-    private static void playerRespawnManager(ModVariables.MapVariables globalVars, Player player){
+    private static void playerRespawnManager(PersistentData.MapVariables globalVars, Player player){
         if (globalVars.difficulty == 0) exEsDifficultyRespawn(globalVars, player);
         else if (globalVars.difficulty == 1) esDifficultyRespawn(globalVars, player);
         else if (globalVars.difficulty == 2) haDifficultyRespawn(globalVars, player);
@@ -756,7 +756,7 @@ public class ModServerEvents {
         }
 
     }
-    private static void exEsDifficultyRespawn(ModVariables.MapVariables globalVars, Player player){
+    private static void exEsDifficultyRespawn(PersistentData.MapVariables globalVars, Player player){
         if (globalVars.deletedBiomes.size() >=35){
             player.getInventory().add(new ItemStack(Items.IRON_SWORD, 1));
             player.getInventory().add(new ItemStack(Items.IRON_PICKAXE, 1));
@@ -794,7 +794,7 @@ public class ModServerEvents {
         }
 
     }
-    private static void esDifficultyRespawn(ModVariables.MapVariables globalVars, Player player){
+    private static void esDifficultyRespawn(PersistentData.MapVariables globalVars, Player player){
         if (globalVars.deletedBiomes.size() >=30){
             player.getInventory().add(new ItemStack(Items.STONE_SWORD, 1));
             player.getInventory().add(new ItemStack(Items.STONE_PICKAXE, 1));
@@ -818,7 +818,7 @@ public class ModServerEvents {
         }
 
     }
-    private static void haDifficultyRespawn(ModVariables.MapVariables globalVars, Player player){
+    private static void haDifficultyRespawn(PersistentData.MapVariables globalVars, Player player){
         if (globalVars.deletedBiomes.size() >= 40){
             player.getInventory().add(new ItemStack(Items.STONE_SWORD, 1));
             player.getInventory().add(new ItemStack(Items.STONE_PICKAXE, 1));
@@ -842,7 +842,7 @@ public class ModServerEvents {
         }
 
     }
-    private static void imDifficultyRespawn(ModVariables.MapVariables globalVars, Player player){
+    private static void imDifficultyRespawn(PersistentData.MapVariables globalVars, Player player){
         if (globalVars.deletedBiomes.size() >= 40){
             player.getInventory().add(new ItemStack(Items.STONE_SWORD, 1));
             player.getInventory().add(new ItemStack(Items.STONE_PICKAXE, 1));
@@ -876,10 +876,11 @@ public class ModServerEvents {
         event.setResult(MobSpawnEvent.PositionCheck.Result.SUCCEED);
     }
 
+    //Used only in debug mode
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.getLevel() instanceof ServerLevel level) {
-            ModVariables.MapVariables vars = ModVariables.MapVariables.get(level);
+            PersistentData.MapVariables vars = PersistentData.MapVariables.get(level);
             if (!vars.debugMode) return;
             if (event.getState().is(Blocks.STONE)) {
                     String target = Biomes.FOREST.location().toString();

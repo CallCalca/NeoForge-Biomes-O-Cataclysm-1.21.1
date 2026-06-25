@@ -5,7 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -28,7 +28,7 @@ public class DebugBranchCommands extends ModCommandsCommon {
     private static int debugMode(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
         boolean enabled = BoolArgumentType.getBool(arguments, "enable");
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
         variables.debugMode = enabled;
         variables.syncData(world, true, false);
         if (enabled){
@@ -48,7 +48,7 @@ public class DebugBranchCommands extends ModCommandsCommon {
     }
     private static int forceNextBiome(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
         if (variables.debugMode){
             if (variables.state == 2){
                 ModUtils.sendChatMessage(world, ModUtils.buildWarningMessage(false, Component.literal(DEBUG),
@@ -71,7 +71,7 @@ public class DebugBranchCommands extends ModCommandsCommon {
     }
     private static int forceTimerTo0(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
         if (variables.debugMode){
             if (variables.state == 2){
                 variables.timer = 0;
@@ -96,7 +96,7 @@ public class DebugBranchCommands extends ModCommandsCommon {
     }
     private static int forceApocalypseToShuffle(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
         if (variables.debugMode) {
             if (variables.state == 2) {
                 settingUpApocalypseMode(variables, world);

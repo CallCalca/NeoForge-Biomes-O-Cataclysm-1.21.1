@@ -1,28 +1,28 @@
-package net.calca.biomesofcataclysms.event;
+package net.calca.biomesofcataclysms.manager;
 
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.calca.biomesofcataclysms.mixin.ClientLevelDataAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
 
 import java.util.Optional;
 
 
 public class ClientTimeManager {
-    public static float transitionProgress = 0.0f;
-    public static final float TRANSITION_SPEED = 0.02f; // ~2 secondi per completare l'animazione
+    public static float transitionProgress = 0.0f; //Quando parte la transizione, il suo valore si accumula fino a 1.0f. Resta 1.0 fino a che non
+                                                        //parte la transizione nuovamente, dove tornerà a 0.0f
+    public static final float TRANSITION_SPEED = 0.02f; // Velocità della transizione. Valore 0.01f -> Durata transizione 1 secondo
 
-    public static long startingTime = -1L;
+    public static long startingTime = -1L; //Valore default
     public static long targetTime = 18000L; // Mezzanotte fissa
-    public static float shortestDistance = 0.0f;
+    public static float shortestDistance = 0.0f; //Sceglie se fara andare indietro il tempo o avanti
 
     public static void tick() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
-        ModVariables.MapVariables globalVars = ModVariables.MapVariables.get(mc.level);
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(mc.level);
         //No need to return if state != 2: i want the time to shift even if the game is paused
 
 

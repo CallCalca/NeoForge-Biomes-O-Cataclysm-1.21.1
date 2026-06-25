@@ -3,7 +3,7 @@ package net.calca.biomesofcataclysms.command;
 import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerLevel;
@@ -21,7 +21,7 @@ public class DifficultyBranchCommands extends ModCommandsCommon {
 
     private static int setDifficultyExEasy(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())){
             return 0;
@@ -39,7 +39,7 @@ public class DifficultyBranchCommands extends ModCommandsCommon {
     }
     private static int setDifficultyEasy(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())){
             return 0;
@@ -57,7 +57,7 @@ public class DifficultyBranchCommands extends ModCommandsCommon {
     }
     private static int setDifficultyHard(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())){
             return 0;
@@ -75,7 +75,7 @@ public class DifficultyBranchCommands extends ModCommandsCommon {
     }
     private static int setDifficultyImpossible(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())){
             return 0;
@@ -93,7 +93,7 @@ public class DifficultyBranchCommands extends ModCommandsCommon {
     }
     private static int setDifficultyHardcore(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())){
             return 0;

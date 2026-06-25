@@ -3,7 +3,7 @@ package net.calca.biomesofcataclysms.command;
 import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -19,7 +19,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 import static net.calca.biomesofcataclysms.ModUtils.decodeCataclysmFromEnum;
-import static net.calca.biomesofcataclysms.event.ModServerEvents.flushRuntimeToSaved;
+import static net.calca.biomesofcataclysms.event.ModServerEvents.loadRuntimeToPersistent;
 
 @EventBusSubscriber
 public class SingleCommands extends ModCommandsCommon {
@@ -32,7 +32,7 @@ public class SingleCommands extends ModCommandsCommon {
         assert serverPlayer != null;
         MinecraftServer server = arguments.getSource().getServer();
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (variables.tickToNextCataclysm == variables.tickDelayBetweenCataclysm && variables.biomesAffected == 0){
             if (variables.state == 0){
@@ -109,7 +109,7 @@ public class SingleCommands extends ModCommandsCommon {
     }
     private static int pause(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (variables.state == 2){
             ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.pause")
@@ -126,7 +126,7 @@ public class SingleCommands extends ModCommandsCommon {
             }
 
             for (ServerLevel serverLevel : server.getAllLevels()) {
-                flushRuntimeToSaved(serverLevel);
+                loadRuntimeToPersistent(serverLevel);
 
                 if (!ModUtils.isAGameAlreadyStarted(variables) && variables.state == 1){
                     variables.state = 0;
@@ -153,7 +153,7 @@ public class SingleCommands extends ModCommandsCommon {
         ServerLevel world = arguments.getSource().getLevel();
         ServerPlayer player = arguments.getSource().getPlayer();
         assert player != null;
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.reset")
                 .withStyle(ChatFormatting.RED)); //Starting

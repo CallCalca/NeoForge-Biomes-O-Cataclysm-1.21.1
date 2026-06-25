@@ -1,9 +1,7 @@
 package net.calca.biomesofcataclysms.event;
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
+import net.calca.biomesofcataclysms.manager.ClientTimeManager;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;

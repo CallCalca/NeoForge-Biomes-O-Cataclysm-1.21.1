@@ -1,14 +1,8 @@
 package net.calca.biomesofcataclysms.mixin;
 
-import net.calca.biomesofcataclysms.event.ClientTimeManager;
-import net.minecraft.client.Minecraft;
+import net.calca.biomesofcataclysms.manager.ClientTimeManager;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.server.level.ChunkMap;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.WritableLevelData;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;

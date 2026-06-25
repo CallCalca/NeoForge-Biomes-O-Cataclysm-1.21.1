@@ -1,6 +1,6 @@
 package net.calca.biomesofcataclysms;
 
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSource;
@@ -53,7 +53,7 @@ public class ModUtils {
             player.displayClientMessage(textComponent, true);
     }
 
-    public static boolean isAGameAlreadyStarted(ModVariables.MapVariables variables){
+    public static boolean isAGameAlreadyStarted(PersistentData.MapVariables variables){
         if (variables.tickToNextCataclysm == variables.tickDelayBetweenCataclysm && variables.biomesAffected == 0){
             return false;
         }else{

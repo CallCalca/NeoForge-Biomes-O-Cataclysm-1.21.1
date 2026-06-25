@@ -5,7 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -27,7 +27,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
 
     private static int setTimerMinutes(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())) {
             return 0;
@@ -112,7 +112,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
     }
     private static int setTimerOff(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())) {
             return 0;
@@ -123,7 +123,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
                     Component.translatable("command.biomesofcataclysms.timerAlreadyOff")
                             .withStyle(ChatFormatting.YELLOW));
         } else {
-            ModVariables.MapVariables defaultVariables = new ModVariables.MapVariables();
+            PersistentData.MapVariables defaultVariables = new PersistentData.MapVariables();
             variables.timer = -1;
             variables.tickDelayBetweenCataclysm = defaultVariables.tickDelayBetweenCataclysm;
             variables.tickToNextCataclysm = variables.tickDelayBetweenCataclysm;
@@ -146,7 +146,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
     }
     private static int setDelayBetweenCataclysmsMinutes(CommandContext<CommandSourceStack> arguments){
         ServerLevel world = arguments.getSource().getLevel();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(world);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
 
         if (!changeSettingsCheck(variables, arguments.getSource().getPlayer())) {
             return 0;

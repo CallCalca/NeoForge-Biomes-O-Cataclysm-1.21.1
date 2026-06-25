@@ -1,17 +1,16 @@
-package net.calca.biomesofcataclysms.data.chunk;
+package net.calca.biomesofcataclysms.manager;
 
 import net.calca.biomesofcataclysms.ModUtils;
-import net.calca.biomesofcataclysms.data.ModVariables;
+import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.RuntimeData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.data.cataclysm.sunburn.SunBurnStage;
+import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
+import net.calca.biomesofcataclysms.data.chunk.ChunkState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -32,113 +31,15 @@ import net.minecraft.world.phys.AABB;
 
 import java.util.*;
 
-public class DeletionQueueManager {
-    public static class DataSavingHelper{
-        private static String dimToString(ResourceKey<Level> dim) {
-        return dim.location().toString();
-    }
-
-        public static ResourceKey<Level> stringToDim(String s) {
-            return ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(s));
-        }
-
-        public static void writeLongDequeMap(CompoundTag root, String name,
-                                              Map<ResourceKey<Level>, ArrayDeque<Long>> map) {
-            CompoundTag section = new CompoundTag();
-
-            Map<ResourceKey<Level>, ArrayDeque<Long>> copy = new HashMap<>();
-            for (var entry : map.entrySet()) {
-                copy.put(entry.getKey(), new ArrayDeque<>(entry.getValue()));
-            }
-
-            for (var entry : copy.entrySet()) {
-                long[] values = entry.getValue().stream().mapToLong(Long::longValue).toArray();
-                section.putLongArray(dimToString(entry.getKey()), values);
-            }
-
-            root.put(name, section);
-        }
-
-        public static void readLongDequeMap(CompoundTag root, String name,
-                                             Map<ResourceKey<Level>, ArrayDeque<Long>> map) {
-            map.clear();
-            if (!root.contains(name, Tag.TAG_COMPOUND)) return;
-
-            CompoundTag section = root.getCompound(name);
-            for (String dimId : section.getAllKeys()) {
-                long[] values = section.getLongArray(dimId);
-                ArrayDeque<Long> deque = new ArrayDeque<>(values.length);
-                for (long value : values) {
-                    deque.addLast(value);
-                }
-                map.put(stringToDim(dimId), deque);
-            }
-        }
-
-        public static void writeStateMap(CompoundTag root, String name,
-                                          Map<ResourceKey<Level>, DimensionState> map) {
-            CompoundTag section = new CompoundTag();
-
-            Map<ResourceKey<Level>, DimensionState> copy = new HashMap<>();
-            for (var entry : map.entrySet()) {
-                DimensionState original = entry.getValue();
-                DimensionState state = new DimensionState();
-                state.currentKey = original.currentKey;
-                state.step = original.step;
-                copy.put(entry.getKey(), state);
-            }
-
-            for (var entry : copy.entrySet()) {
-                CompoundTag stateTag = new CompoundTag();
-                DimensionState state = entry.getValue();
-
-                stateTag.putBoolean("hasCurrentKey", state.currentKey != null);
-                if (state.currentKey != null) {
-                    stateTag.putLong("currentKey", state.currentKey);
-                }
-                stateTag.putInt("step", state.step);
-
-                section.put(dimToString(entry.getKey()), stateTag);
-            }
-
-            root.put(name, section);
-        }
-
-        public static void readStateMap(CompoundTag root, String name,
-                                         Map<ResourceKey<Level>, DimensionState> map) {
-            map.clear();
-            if (!root.contains(name, Tag.TAG_COMPOUND)) return;
-
-            CompoundTag section = root.getCompound(name);
-            for (String dimId : section.getAllKeys()) {
-                CompoundTag stateTag = section.getCompound(dimId);
-                DimensionState state = new DimensionState();
-
-                if (stateTag.getBoolean("hasCurrentKey")) {
-                    state.currentKey = stateTag.getLong("currentKey");
-                }
-                state.step = stateTag.getInt("step");
-
-                map.put(stringToDim(dimId), state);
-            }
-        }
-
-    }
-    public static class RuntimeBuffers {
-        public static final Map<ResourceKey<Level>, ArrayDeque<Long>> INITIAL_ORDER = new HashMap<>();
-        public static final Map<ResourceKey<Level>, ArrayDeque<Long>> DYNAMIC_ORDER = new HashMap<>();
-        public static final Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> INITIAL_STATES = new HashMap<>();
-        public static final Map<ResourceKey<Level>, DeletionQueueManager.DimensionState> DYNAMIC_STATES = new HashMap<>();
-        public static final Map<ResourceKey<Level>, Map<Long, ChunkMod>> CHUNKS = new HashMap<>();
-    }
+public class ChunkProcessorManager {
 
     public static class DimensionState {
         public Long currentKey = null;
         public int step = 0;
     }
 
-    private static Map<Long, ChunkMod> getOrCreateDimChunkMap(ResourceKey<Level> dim) {
-        return RuntimeBuffers.CHUNKS.computeIfAbsent(dim, k -> new HashMap<>());
+    private static Map<Long, ChunkInstance> getOrCreateDimChunkMap(ResourceKey<Level> dim) {
+        return RuntimeData.CHUNKS.computeIfAbsent(dim, k -> new HashMap<>());
     }
     private static ArrayDeque<Long> getOrCreateQueue(Map<ResourceKey<Level>, ArrayDeque<Long>> store, ResourceKey<Level> dim) {
         ArrayDeque<Long> queue = store.get(dim);
@@ -153,17 +54,17 @@ public class DeletionQueueManager {
         ResourceKey<Level> dim = level.dimension();
         long packed = pos.toLong();
 
-        Map<Long, ChunkMod> dimMap = getOrCreateDimChunkMap(dim);
-        ChunkMod mod = dimMap.get(packed);
+        Map<Long, ChunkInstance> dimMap = getOrCreateDimChunkMap(dim);
+        ChunkInstance mod = dimMap.get(packed);
 
         if (mod == null) {
-            mod = new ChunkMod(dim, pos, level);
+            mod = new ChunkInstance(dim, pos, level);
             dimMap.put(packed, mod);
         }
 
         mod.initialWave = true;
 
-        ArrayDeque<Long> queue = getOrCreateQueue(RuntimeBuffers.INITIAL_ORDER, dim);
+        ArrayDeque<Long> queue = getOrCreateQueue(RuntimeData.INITIAL_ORDER, dim);
         if (!queue.contains(packed)) {
             queue.addLast(packed);
         }
@@ -172,11 +73,11 @@ public class DeletionQueueManager {
         ResourceKey<Level> dim = level.dimension();
         long packed = pos.toLong();
 
-        Map<Long, ChunkMod> dimMap = getOrCreateDimChunkMap(dim);
-        ChunkMod mod = dimMap.get(packed);
+        Map<Long, ChunkInstance> dimMap = getOrCreateDimChunkMap(dim);
+        ChunkInstance mod = dimMap.get(packed);
 
         if (mod == null) {
-            mod = new ChunkMod(dim, pos, level);
+            mod = new ChunkInstance(dim, pos, level);
             dimMap.put(packed, mod);
         }
 
@@ -189,21 +90,21 @@ public class DeletionQueueManager {
 
         mod.dynamic = true;
 
-        ArrayDeque<Long> queue = getOrCreateQueue(RuntimeBuffers.DYNAMIC_ORDER, dim);
+        ArrayDeque<Long> queue = getOrCreateQueue(RuntimeData.DYNAMIC_ORDER, dim);
         if (!queue.contains(packed)) {
             queue.addLast(packed);
         }
     }
 
     public static void refreshDynamicQueue(ServerLevel level) {
-        ModVariables.MapVariables mapVariables = ModVariables.MapVariables.get(level);
+        PersistentData.MapVariables mapVariables = PersistentData.MapVariables.get(level);
         ResourceKey<Level> dim = level.dimension();
-        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
         if (registry == null || registry.isEmpty()) return;
 
-        List<ChunkMod> valid = new ArrayList<>();
+        List<ChunkInstance> valid = new ArrayList<>();
 
-        for (ChunkMod mod : registry.values()) {
+        for (ChunkInstance mod : registry.values()) {
             AllCataclysms type = ModUtils.decodeCataclysmFromString(mapVariables.cataclysm);
             if (type == null){
                 type = AllCataclysms.DESTROYED;
@@ -237,21 +138,21 @@ public class DeletionQueueManager {
         valid.sort(Comparator.comparingDouble(m -> m.priorityScore));
 
         ArrayDeque<Long> newOrder = new ArrayDeque<>();
-        for (ChunkMod mod : valid) {
+        for (ChunkInstance mod : valid) {
             newOrder.addLast(ChunkPos.asLong(mod.pos.x, mod.pos.z));
         }
 
-        RuntimeBuffers.DYNAMIC_ORDER.put(dim, newOrder);
+        RuntimeData.DYNAMIC_ORDER.put(dim, newOrder);
     }
     public static void pruneDynamicQueue(ServerLevel level) {
         ResourceKey<Level> dim = level.dimension();
-        ArrayDeque<Long> queue = RuntimeBuffers.DYNAMIC_ORDER.get(dim);
-        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
+        ArrayDeque<Long> queue = RuntimeData.DYNAMIC_ORDER.get(dim);
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
 
         if (queue == null || queue.isEmpty() || registry == null) return;
 
         queue.removeIf(key -> {
-            ChunkMod mod = registry.get(key);
+            ChunkInstance mod = registry.get(key);
             if (mod == null) return true;
 
             // se il chunk non è più caricato, esce dalla coda
@@ -267,13 +168,13 @@ public class DeletionQueueManager {
         });
     }
     public static boolean isQueueEmpty(ServerLevel level) {
-        ArrayDeque<Long> order = RuntimeBuffers.DYNAMIC_ORDER.get(level.dimension());
+        ArrayDeque<Long> order = RuntimeData.DYNAMIC_ORDER.get(level.dimension());
         return order == null || order.isEmpty();
     }
 
     public static void rescueMissedChunks(ServerLevel level, int scanRadiusChunks) {
         ResourceKey<Level> dim = level.dimension();
-        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
         if (registry == null || registry.isEmpty() || level.players().isEmpty()) return;
 
         long now = level.getGameTime();
@@ -290,7 +191,7 @@ public class DeletionQueueManager {
                     if (!visited.add(key)) continue;
                     if (!level.hasChunk(pos.x, pos.z)) continue;
 
-                    ChunkMod mod = registry.get(key);
+                    ChunkInstance mod = registry.get(key);
 
                     // Se è già gestito, non fare nulla
                     if (mod != null) {
@@ -299,7 +200,7 @@ public class DeletionQueueManager {
                     }
 
                     if (mod == null) {
-                        mod = new ChunkMod(dim, pos, level);
+                        mod = new ChunkInstance(dim, pos, level);
                         registry.put(key, mod);
                     }
 
@@ -324,11 +225,11 @@ public class DeletionQueueManager {
         ResourceKey<Level> dim = level.dimension();
         ArrayDeque<Long> order = orders.get(dim);
         DimensionState state = states.computeIfAbsent(dim, d -> new DimensionState());
-        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
 
         if (order == null || order.isEmpty() || registry == null) return;
 
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(level);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(level);
         AllCataclysms type = ModUtils.decodeCataclysmFromString(variables.cataclysm);
         if (type == null){
             type = AllCataclysms.DESTROYED;
@@ -342,7 +243,7 @@ public class DeletionQueueManager {
                 if (order.isEmpty()) break;
 
                 long next = order.pollFirst();
-                ChunkMod mod = registry.get(next);
+                ChunkInstance mod = registry.get(next);
 
                 if (mod == null || mod.state == ChunkState.DONE
                         || (type == AllCataclysms.SUN_BURNT && mod.state == ChunkState.PARTIAL)
@@ -354,7 +255,7 @@ public class DeletionQueueManager {
                 mod.state = ChunkState.PROCESSING;
             }
 
-            ChunkMod current = registry.get(state.currentKey);
+            ChunkInstance current = registry.get(state.currentKey);
             if (current == null) {
                 state.currentKey = null;
                 continue;
@@ -449,7 +350,7 @@ public class DeletionQueueManager {
                 current.initialWave = false;
                 current.dynamic = true;
                 long packed = current.pos.toLong();
-                ArrayDeque<Long> dyn = getOrCreateQueue(RuntimeBuffers.DYNAMIC_ORDER, dim);
+                ArrayDeque<Long> dyn = getOrCreateQueue(RuntimeData.DYNAMIC_ORDER, dim);
                 if (!dyn.contains(packed)) dyn.addLast(packed);
             }
 
@@ -484,7 +385,7 @@ public class DeletionQueueManager {
                                                int band) {
         int minY = level.getMinBuildHeight();
         int maxY = level.getMaxBuildHeight();
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(level);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(level);
 
         if (cataclysms == AllCataclysms.SUN_BURNT) {
             applySunBurntChunk(level, pos, targetBiomes, variables);
@@ -565,7 +466,7 @@ public class DeletionQueueManager {
     private static void applySunBurntChunk(ServerLevel level,
                                            ChunkPos pos,
                                            Set<String> targetBiomes,
-                                           ModVariables.MapVariables vars) {
+                                           PersistentData.MapVariables vars) {
 
         String activeBiomeId = targetBiomes.iterator().next();
         long elapsed = vars.getSunBurnElapsedTicks(activeBiomeId, level);
@@ -770,10 +671,10 @@ public class DeletionQueueManager {
     }
     public static void resetSunBurntWaves(ServerLevel level) {
         ResourceKey<Level> dim = level.dimension();
-        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
         if (registry == null) return;
 
-        for (ChunkMod mod : registry.values()) {
+        for (ChunkInstance mod : registry.values()) {
             if (mod.state == ChunkState.PARTIAL) {
                 mod.state = ChunkState.QUEUED; // Torna disponibile
                 // Opzionale: lo riaggiungiamo alla coda se non c'è già
@@ -783,10 +684,10 @@ public class DeletionQueueManager {
     }
     public static void resetFloodWaves(ServerLevel level) {
         ResourceKey<Level> dim = level.dimension();
-        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
         if (registry == null) return;
 
-        for (ChunkMod mod : registry.values()) {
+        for (ChunkInstance mod : registry.values()) {
             if (mod.state == ChunkState.PARTIAL) {
                 mod.state = ChunkState.QUEUED; // Torna disponibile
                 // Opzionale: lo riaggiungiamo alla coda se non c'è già
@@ -1082,14 +983,14 @@ public class DeletionQueueManager {
         ResourceKey<Level> dim = level.dimension();
 
         // Accediamo ai buffer globali che abbiamo definito all'inizio
-        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(dim);
-        ArrayDeque<Long> dynamicQueue = RuntimeBuffers.DYNAMIC_ORDER.get(dim);
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
+        ArrayDeque<Long> dynamicQueue = RuntimeData.DYNAMIC_ORDER.get(dim);
 
         // Se il registro o la coda non esistono per questa dimensione, usciamo
         if (registry == null || dynamicQueue == null) return;
 
-        for (Map.Entry<Long, ChunkMod> entry : registry.entrySet()) {
-            ChunkMod mod = entry.getValue();
+        for (Map.Entry<Long, ChunkInstance> entry : registry.entrySet()) {
+            ChunkInstance mod = entry.getValue();
 
             // Risvegliamo solo i chunk che sono in pausa (PARTIAL)
             if (mod.state == ChunkState.PARTIAL) {
@@ -1226,23 +1127,23 @@ public class DeletionQueueManager {
     }
 
     public static void processInitialQueue(ServerLevel level, int passes) {
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(level);
-        process(level, RuntimeBuffers.INITIAL_ORDER, RuntimeBuffers.INITIAL_STATES, passes, false);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(level);
+        process(level, RuntimeData.INITIAL_ORDER, RuntimeData.INITIAL_STATES, passes, false);
         variables.syncData(level, true, false);
     }
     public static void processDynamicQueue(ServerLevel level, int passes) {
-        ModVariables.MapVariables variables = ModVariables.MapVariables.get(level);
-        process(level, RuntimeBuffers.DYNAMIC_ORDER, RuntimeBuffers.DYNAMIC_STATES, passes, true);
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(level);
+        process(level, RuntimeData.DYNAMIC_ORDER, RuntimeData.DYNAMIC_STATES, passes, true);
         variables.syncData(level, true, false);
     }
 
     public static boolean hasChunksInRadius(ServerLevel level, ChunkPos center, int radius) {
-        Map<Long, ChunkMod> registry = RuntimeBuffers.CHUNKS.get(level.dimension());
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(level.dimension());
         if (registry == null || registry.isEmpty()) return false;
 
         int radiusSq = radius * radius;
 
-        for (ChunkMod mod : registry.values()) {
+        for (ChunkInstance mod : registry.values()) {
             if (mod.state == ChunkState.DONE) continue;
 
             int dx = mod.pos.x - center.x;
@@ -1282,15 +1183,15 @@ public class DeletionQueueManager {
         return best;
     }
 
-    public static ChunkMod getOrCreateChunkMod(ServerLevel level, ChunkPos pos) {
+    public static ChunkInstance getOrCreateChunkMod(ServerLevel level, ChunkPos pos) {
         ResourceKey<Level> dim = level.dimension();
-        Map<Long, ChunkMod> dimMap = getOrCreateDimChunkMap(dim);
+        Map<Long, ChunkInstance> dimMap = getOrCreateDimChunkMap(dim);
 
         long packed = pos.toLong();
-        ChunkMod mod = dimMap.get(packed);
+        ChunkInstance mod = dimMap.get(packed);
 
         if (mod == null) {
-            mod = new ChunkMod(dim, pos, level);
+            mod = new ChunkInstance(dim, pos, level);
             dimMap.put(packed, mod);
         }
 
