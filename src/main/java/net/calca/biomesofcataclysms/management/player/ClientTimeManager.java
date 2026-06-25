@@ -1,4 +1,4 @@
-package net.calca.biomesofcataclysms.manager;
+package net.calca.biomesofcataclysms.management.player;
 
 import net.calca.biomesofcataclysms.data.PersistentData;
 import net.calca.biomesofcataclysms.mixin.ClientLevelDataAccessor;

@@ -4,7 +4,9 @@ import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
 import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.RuntimeData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
+import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -18,8 +20,12 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
+
 import static net.calca.biomesofcataclysms.ModUtils.decodeCataclysmFromEnum;
-import static net.calca.biomesofcataclysms.event.ModServerEvents.loadRuntimeToPersistent;
+import static net.calca.biomesofcataclysms.data.DataSync.copyState;
 
 @EventBusSubscriber
 public class SingleCommands extends ModCommandsCommon {
@@ -169,6 +175,28 @@ public class SingleCommands extends ModCommandsCommon {
         }
 
         return 0;
+    }
+
+    private static void loadRuntimeToPersistent(ServerLevel server) {
+        PersistentData.MapVariables saved = PersistentData.MapVariables.get(server);
+        saved.initialOrder.clear();
+        saved.dynamicOrder.clear();
+        saved.initialStates.clear();
+        saved.dynamicStates.clear();
+        saved.chunks.clear();
+
+        for (var e : RuntimeData.INITIAL_ORDER.entrySet()) saved.initialOrder.put(e.getKey(), new ArrayDeque<>(e.getValue()));
+        for (var e : RuntimeData.DYNAMIC_ORDER.entrySet()) saved.dynamicOrder.put(e.getKey(), new ArrayDeque<>(e.getValue()));
+        for (var e : RuntimeData.INITIAL_STATES.entrySet()) saved.initialStates.put(e.getKey(), copyState(e.getValue()));
+        for (var e : RuntimeData.DYNAMIC_STATES.entrySet()) saved.dynamicStates.put(e.getKey(), copyState(e.getValue()));
+        for (var dimEntry : RuntimeData.CHUNKS.entrySet()) {
+            Map<Long, ChunkInstance> dimCopy = new HashMap<>();
+            for (var chunkEntry : dimEntry.getValue().entrySet()) {
+                dimCopy.put(chunkEntry.getKey(), chunkEntry.getValue());
+            }
+            saved.chunks.put(dimEntry.getKey(), dimCopy);
+        }
+        saved.setDirty(); // solo salvataggio su disco
     }
 
     @SubscribeEvent

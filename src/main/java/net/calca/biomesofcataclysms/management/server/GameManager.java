@@ -1,4 +1,4 @@
-package net.calca.biomesofcataclysms.manager;
+package net.calca.biomesofcataclysms.management.server;
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;

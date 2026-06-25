@@ -1,6 +1,6 @@
 package net.calca.biomesofcataclysms.mixin;
 
-import net.calca.biomesofcataclysms.manager.ClientTimeManager;
+import net.calca.biomesofcataclysms.management.player.ClientTimeManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

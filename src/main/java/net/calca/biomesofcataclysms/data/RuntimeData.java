@@ -1,12 +1,8 @@
 package net.calca.biomesofcataclysms.data;
 
 import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
-import net.calca.biomesofcataclysms.manager.ChunkProcessorManager;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 
 import java.util.ArrayDeque;
@@ -21,7 +17,7 @@ import java.util.Map;
 public class RuntimeData {
         public static final Map<ResourceKey<Level>, ArrayDeque<Long>> INITIAL_ORDER = new HashMap<>();
         public static final Map<ResourceKey<Level>, ArrayDeque<Long>> DYNAMIC_ORDER = new HashMap<>();
-        public static final Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> INITIAL_STATES = new HashMap<>();
-        public static final Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> DYNAMIC_STATES = new HashMap<>();
+        public static final Map<ResourceKey<Level>, ChunkProcessor.DimensionState> INITIAL_STATES = new HashMap<>();
+        public static final Map<ResourceKey<Level>, ChunkProcessor.DimensionState> DYNAMIC_STATES = new HashMap<>();
         public static final Map<ResourceKey<Level>, Map<Long, ChunkInstance>> CHUNKS = new HashMap<>();
 }

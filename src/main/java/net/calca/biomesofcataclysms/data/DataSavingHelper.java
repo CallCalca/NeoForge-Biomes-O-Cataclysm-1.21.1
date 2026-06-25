@@ -1,7 +1,6 @@
 package net.calca.biomesofcataclysms.data;
 
-import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
-import net.calca.biomesofcataclysms.manager.ChunkProcessorManager;
+import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -56,13 +55,13 @@ public class DataSavingHelper{
         }
 
         public static void writeStateMap(CompoundTag root, String name,
-                                         Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> map) {
+                                         Map<ResourceKey<Level>, ChunkProcessor.DimensionState> map) {
             CompoundTag section = new CompoundTag();
 
-            Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> copy = new HashMap<>();
+            Map<ResourceKey<Level>, ChunkProcessor.DimensionState> copy = new HashMap<>();
             for (var entry : map.entrySet()) {
-                ChunkProcessorManager.DimensionState original = entry.getValue();
-                ChunkProcessorManager.DimensionState state = new ChunkProcessorManager.DimensionState();
+                ChunkProcessor.DimensionState original = entry.getValue();
+                ChunkProcessor.DimensionState state = new ChunkProcessor.DimensionState();
                 state.currentKey = original.currentKey;
                 state.step = original.step;
                 copy.put(entry.getKey(), state);
@@ -70,7 +69,7 @@ public class DataSavingHelper{
 
             for (var entry : copy.entrySet()) {
                 CompoundTag stateTag = new CompoundTag();
-                ChunkProcessorManager.DimensionState state = entry.getValue();
+                ChunkProcessor.DimensionState state = entry.getValue();
 
                 stateTag.putBoolean("hasCurrentKey", state.currentKey != null);
                 if (state.currentKey != null) {
@@ -85,14 +84,14 @@ public class DataSavingHelper{
         }
 
         public static void readStateMap(CompoundTag root, String name,
-                                        Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> map) {
+                                        Map<ResourceKey<Level>, ChunkProcessor.DimensionState> map) {
             map.clear();
             if (!root.contains(name, Tag.TAG_COMPOUND)) return;
 
             CompoundTag section = root.getCompound(name);
             for (String dimId : section.getAllKeys()) {
                 CompoundTag stateTag = section.getCompound(dimId);
-                ChunkProcessorManager.DimensionState state = new ChunkProcessorManager.DimensionState();
+                ChunkProcessor.DimensionState state = new ChunkProcessor.DimensionState();
 
                 if (stateTag.getBoolean("hasCurrentKey")) {
                     state.currentKey = stateTag.getLong("currentKey");

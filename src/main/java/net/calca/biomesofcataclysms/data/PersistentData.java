@@ -3,7 +3,7 @@ package net.calca.biomesofcataclysms.data;
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
-import net.calca.biomesofcataclysms.manager.ChunkProcessorManager;
+import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
 import net.calca.biomesofcataclysms.data.chunk.ChunkState;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -44,6 +44,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static net.calca.biomesofcataclysms.data.DataSavingHelper.*;
+import static net.calca.biomesofcataclysms.management.chunk.flood.FloodProcessorHelper.resetFloodWaves;
 
 
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
@@ -77,8 +78,8 @@ public class PersistentData {
         public final Map<ResourceKey<Level>, ArrayDeque<Long>> initialOrder = new HashMap<>();
         public final Map<ResourceKey<Level>, ArrayDeque<Long>> dynamicOrder = new HashMap<>();
 
-        public final Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> initialStates = new HashMap<>();
-        public final Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> dynamicStates = new HashMap<>();
+        public final Map<ResourceKey<Level>, ChunkProcessor.DimensionState> initialStates = new HashMap<>();
+        public final Map<ResourceKey<Level>, ChunkProcessor.DimensionState> dynamicStates = new HashMap<>();
         public final Map<String, Integer> floodedHeights = new HashMap<>();
         public final Map<String, Long> sunBurnStartTicks = new HashMap<>();
 
@@ -226,8 +227,8 @@ public class PersistentData {
             Map<ResourceKey<Level>, Map<Long, ChunkInstance>> chunksCopy;
             Map<ResourceKey<Level>, ArrayDeque<Long>> initialOrderCopy;
             Map<ResourceKey<Level>, ArrayDeque<Long>> dynamicOrderCopy;
-            Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> initialStatesCopy;
-            Map<ResourceKey<Level>, ChunkProcessorManager.DimensionState> dynamicStatesCopy;
+            Map<ResourceKey<Level>, ChunkProcessor.DimensionState> initialStatesCopy;
+            Map<ResourceKey<Level>, ChunkProcessor.DimensionState> dynamicStatesCopy;
             Map<String, Integer> floodedHeightsCopy;
             Map<String, Long> sunBurnStartTicksCopy;
 
@@ -491,7 +492,7 @@ public class PersistentData {
                         if (!level.hasChunk(targetPos.x, targetPos.z)) continue;
 
                         String chunkKey = targetPos.x + "," + targetPos.z + "," + dimKey;
-                        ChunkInstance mod = ChunkProcessorManager.getOrCreateChunkMod(level, targetPos);
+                        ChunkInstance mod = ChunkProcessor.getOrCreateChunkMod(level, targetPos);
 
                         // Se il chunk è già in lavorazione o già in una coda, non fare nulla
                         if (mod.initialWave || mod.dynamic || mod.state == ChunkState.PROCESSING) {
@@ -515,7 +516,7 @@ public class PersistentData {
                         // -------------------------
 
                         this.setDirty();
-                        ChunkProcessorManager.registerDynamicChunk(level, targetPos);
+                        ChunkProcessor.registerDynamicChunk(level, targetPos);
                     }
                 }
 
@@ -543,7 +544,7 @@ public class PersistentData {
                         long packed = targetPos.toLong();
                         if (!foundKeys.add(packed)) continue;
 
-                        ChunkInstance mod = ChunkProcessorManager.getOrCreateChunkMod(level, targetPos);
+                        ChunkInstance mod = ChunkProcessor.getOrCreateChunkMod(level, targetPos);
 
                         if (mod.biomeIds.contains(targetBiomeId)) {
                             foundChunks.add(targetPos);
@@ -562,9 +563,9 @@ public class PersistentData {
 
             for (ChunkPos pos : foundChunks) {
                 if (priority) {
-                    ChunkProcessorManager.registerDynamicChunk(level, pos);
+                    ChunkProcessor.registerDynamicChunk(level, pos);
                 } else {
-                    ChunkProcessorManager.registerInitialChunk(level, pos);
+                    ChunkProcessor.registerInitialChunk(level, pos);
                 }
             }
         }
@@ -586,7 +587,7 @@ public class PersistentData {
             }));
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                ChunkProcessorManager.registerDynamicChunk(level, pos);
+                ChunkProcessor.registerDynamicChunk(level, pos);
             }
         }
         private void randomChunkDestruction(List<ChunkPos> foundChunks, ServerLevel level){
@@ -595,7 +596,7 @@ public class PersistentData {
 
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                ChunkProcessorManager.registerInitialChunk(level, pos);
+                ChunkProcessor.registerInitialChunk(level, pos);
             }
         }
         private void surroundingChunkDestruction(List<ChunkPos> foundChunks, List<ServerPlayer> players, ServerLevel level) {
@@ -621,7 +622,7 @@ public class PersistentData {
 
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                ChunkProcessorManager.registerInitialChunk(level, pos);
+                ChunkProcessor.registerInitialChunk(level, pos);
             }
         }
 
@@ -646,7 +647,7 @@ public class PersistentData {
 
 
             if (changed) {
-                ChunkProcessorManager.resetFloodWaves(level);
+                resetFloodWaves(level);
                 this.setDirty();
             }
             return changed;
