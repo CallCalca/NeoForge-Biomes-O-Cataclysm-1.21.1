@@ -249,7 +249,7 @@ public class ModCommandsCommon {
                         .withUnderlined(false)
                         .withClickEvent(new ClickEvent(
                                 ClickEvent.Action.SUGGEST_COMMAND,
-                                "/biomesOfCataclysms game setCataclysm"
+                                "/biomesOfCataclysms gameplay setCataclysm"
                         ))
                         .withColor(ChatFormatting.LIGHT_PURPLE)
                         .withBold(true)

@@ -127,6 +127,53 @@ public class GameplayBranchCommands extends ModCommandsCommon {
 
         return 0;
     }
+    private static int setCataclysmToEternalEclipse(CommandContext<CommandSourceStack> arguments){
+        ServerLevel world = arguments.getSource().getLevel();
+        PersistentData.MapVariables variables = PersistentData.MapVariables.get(world);
+        ServerPlayer player = arguments.getSource().getPlayer();
+        assert player != null;
+        if (variables.state < 2){
+            ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.aGameMustBeRunning")
+                    .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
+            player.playNotifySound(
+                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
+                    SoundSource.MASTER,                 // categoria audio
+                    1F,                               // volume
+                    0.4F                                // pitch
+            );
+            return 0;
+        } //Check
+        if (!variables.deletedBiomes.isEmpty()){
+            ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.cannotChangeCataclusm")
+                    .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
+            player.playNotifySound(
+                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
+                    SoundSource.MASTER,                 // categoria audio
+                    1F,                               // volume
+                    0.4F                                // pitch
+            );
+            return 0;
+
+        } //Check
+
+        variables.cataclysm = ModUtils.decodeCataclysmFromEnum(AllCataclysms.ETERNAL_ECLIPSE);
+        variables.syncData(world, true, false);
+        MutableComponent cataclysm = Component.literal(variables.cataclysm)
+                .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
+
+        ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setCataclysmTo", cataclysm)
+                .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
+        for (ServerPlayer serverPlayer : arguments.getSource().getServer().getPlayerList().getPlayers()) {
+            serverPlayer.playNotifySound(
+                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
+                    SoundSource.MASTER,                 // categoria audio
+                    1F,                               // volume
+                    0.9F                                // pitch
+            );
+        }
+
+        return 0;
+    }
 
     @SubscribeEvent
     public static void registerCommand(RegisterCommandsEvent event) {//OP players
@@ -138,6 +185,9 @@ public class GameplayBranchCommands extends ModCommandsCommon {
                                 )
                                 .then(Commands.literal("solar_storm")
                                         .executes(GameplayBranchCommands::setCataclysmToSolarStorm)
+                                )
+                                .then(Commands.literal("eternal_eclipse")
+                                        .executes(GameplayBranchCommands::setCataclysmToEternalEclipse)
                                 )
                         )
                 )

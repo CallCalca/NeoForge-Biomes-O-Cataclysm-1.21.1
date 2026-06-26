@@ -2,9 +2,11 @@ package net.calca.biomesofcataclysms.data;
 
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
+import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
 import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
 import net.calca.biomesofcataclysms.data.chunk.ChunkState;
+import net.calca.biomesofcataclysms.management.chunk.ChunkQueueManager;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.ListTag;
@@ -54,6 +56,8 @@ public class PersistentData {
     @SubscribeEvent
     public static void init(FMLCommonSetupEvent event) {
         BiomesOfCataclysms.addNetworkMessage(SavedDataSyncMessage.TYPE, SavedDataSyncMessage.STREAM_CODEC, SavedDataSyncMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(DedicatedSyncMessage.TYPE, DedicatedSyncMessage.STREAM_CODEC, DedicatedSyncMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(RequestCataclysmSyncMessage.TYPE, RequestCataclysmSyncMessage.STREAM_CODEC, RequestCataclysmSyncMessage::handleData);
     }
 
     @EventBusSubscriber
@@ -116,7 +120,12 @@ public class PersistentData {
         public int tickDelayBetweenCataclysm = 5*60*20; // 6000 = 5 minutes default
         public int timer = -1;//When -1 -> timer is disabled
         public int state = 0; //0 = paused; 1 = paused (to confirm); 2 = playing;
+
         public int dataCondition = 0; //0 = data is fine; 1 = data is corrupted; -1 = data needs to be analyzed;
+        // 0 -> Nessuna richiesta dal client;
+        // 1 -> Richiesta dei dati Dedicated (quelli essenziali);
+        // 2 -> Richiesta globale di tutti i dati.
+        // I dati corrispondenti devono essere inviati ai client.
 
         public String nextBiomeToAffect = "None";
         public String cataclysm = "NULL";
@@ -426,7 +435,6 @@ public class PersistentData {
             String targetBiomeId = this.shuffledBiomes.remove(0);
             this.deletedBiomes.add(targetBiomeId);
             this.biomesAffected++;
-            this.biomesAffected--;
 
             if (!this.shuffledBiomes.isEmpty()) {
                 this.nextBiomeToAffect = this.shuffledBiomes.get(0);
@@ -434,11 +442,12 @@ public class PersistentData {
 
             // TRIGGER IMMEDIATO: Inizia subito a scansionare per evitare il lag di 30s
             if (difficulty < 4 && mode != 1){ //If chunk destruction DOESNT start on player pos
-                for (ServerLevel level : server.getAllLevels()) {
-                    scanAndQueueChunks(level, targetBiomeId, true); // true = priorità alta (onda)
+                    for (ServerLevel level : server.getAllLevels()) {
+                        scanAndQueueChunks(level, targetBiomeId, true); // true = priorità alta (onda)
                 }
             }
 
+            sendDedicatedOnlyClientPacket(server.overworld());
             this.setDirty();
         }
         //Only used in debug mode
@@ -492,7 +501,7 @@ public class PersistentData {
                         if (!level.hasChunk(targetPos.x, targetPos.z)) continue;
 
                         String chunkKey = targetPos.x + "," + targetPos.z + "," + dimKey;
-                        ChunkInstance mod = ChunkProcessor.getOrCreateChunkMod(level, targetPos);
+                        ChunkInstance mod = ModUtils.getOrCreateChunkMod(level, targetPos);
 
                         // Se il chunk è già in lavorazione o già in una coda, non fare nulla
                         if (mod.initialWave || mod.dynamic || mod.state == ChunkState.PROCESSING) {
@@ -516,7 +525,7 @@ public class PersistentData {
                         // -------------------------
 
                         this.setDirty();
-                        ChunkProcessor.registerDynamicChunk(level, targetPos);
+                        ChunkQueueManager.registerDynamicChunk(level, targetPos);
                     }
                 }
 
@@ -544,7 +553,7 @@ public class PersistentData {
                         long packed = targetPos.toLong();
                         if (!foundKeys.add(packed)) continue;
 
-                        ChunkInstance mod = ChunkProcessor.getOrCreateChunkMod(level, targetPos);
+                        ChunkInstance mod = ModUtils.getOrCreateChunkMod(level, targetPos);
 
                         if (mod.biomeIds.contains(targetBiomeId)) {
                             foundChunks.add(targetPos);
@@ -563,9 +572,9 @@ public class PersistentData {
 
             for (ChunkPos pos : foundChunks) {
                 if (priority) {
-                    ChunkProcessor.registerDynamicChunk(level, pos);
+                    ChunkQueueManager.registerDynamicChunk(level, pos);
                 } else {
-                    ChunkProcessor.registerInitialChunk(level, pos);
+                    ChunkQueueManager.registerInitialChunk(level, pos);
                 }
             }
         }
@@ -587,7 +596,7 @@ public class PersistentData {
             }));
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                ChunkProcessor.registerDynamicChunk(level, pos);
+                ChunkQueueManager.registerDynamicChunk(level, pos);
             }
         }
         private void randomChunkDestruction(List<ChunkPos> foundChunks, ServerLevel level){
@@ -596,7 +605,7 @@ public class PersistentData {
 
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                ChunkProcessor.registerInitialChunk(level, pos);
+                ChunkQueueManager.registerInitialChunk(level, pos);
             }
         }
         private void surroundingChunkDestruction(List<ChunkPos> foundChunks, List<ServerPlayer> players, ServerLevel level) {
@@ -622,7 +631,7 @@ public class PersistentData {
 
             for (ChunkPos pos : foundChunks) {
                 // IMPORTANTE: addLast per preservare l'ordine dell'onda iniziale
-                ChunkProcessor.registerInitialChunk(level, pos);
+                ChunkQueueManager.registerInitialChunk(level, pos);
             }
         }
 
@@ -689,6 +698,12 @@ public class PersistentData {
             this.setDirty();
         }
 
+        public void sendDedicatedOnlyClientPacket(LevelAccessor world) {
+            if (world instanceof Level level && !world.isClientSide()) {
+                PacketDistributor.sendToAllPlayers(new DedicatedSyncMessage(this.cataclysm, this.state, this.deletedBiomes));
+            }
+        }
+
         public MapVariables copyForSync(HolderLookup.Provider provider) {
             CompoundTag tag = this.save(new CompoundTag(), provider);
             return MapVariables.load(tag, provider);
@@ -739,6 +754,108 @@ public class PersistentData {
                     return null;
                 });
             }
+        }
+    }
+    public record DedicatedSyncMessage(String cataclysm, int state, Set<String> deletedBiomes) implements CustomPacketPayload {
+        public static final Type<DedicatedSyncMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(BiomesOfCataclysms.MODID, "cataclysm_sync"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, DedicatedSyncMessage> STREAM_CODEC =
+                StreamCodec.of(
+                        (buf, msg) -> {
+                            buf.writeUtf(msg.cataclysm == null ? "NULL" : msg.cataclysm);
+                            buf.writeInt(msg.state);
+
+                            // Scrittura del Set di stringhe
+                            buf.writeInt(msg.deletedBiomes.size());
+                            for (String biome : msg.deletedBiomes) {
+                                buf.writeUtf(biome);
+                            }
+                        },
+                        buf -> {
+                            String cataclysm = buf.readUtf();
+                            int state = buf.readInt();
+
+                            // Lettura del Set di stringhe
+                            int size = buf.readInt();
+                            Set<String> deletedBiomes = new HashSet<>();
+                            for (int i = 0; i < size; i++) {
+                                deletedBiomes.add(buf.readUtf());
+                            }
+
+                            return new DedicatedSyncMessage(cataclysm, state, deletedBiomes);
+                        }
+                );
+
+        @Override
+        public Type<DedicatedSyncMessage> type() {
+            return TYPE;
+        }
+
+        public static void handleData(final DedicatedSyncMessage message, final IPayloadContext context) {
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                MapVariables.clientSide.cataclysm = message.cataclysm;
+                MapVariables.clientSide.state = message.state;
+
+                // Sincronizzazione dei biomi cancellati sul client
+                MapVariables.clientSide.deletedBiomes.clear();
+                MapVariables.clientSide.deletedBiomes.addAll(message.deletedBiomes);
+                MapVariables.clientSide.biomesAffected = message.deletedBiomes.size();
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal(e.getMessage()));
+                return null;
+            });
+        }
+    }
+
+    public record RequestCataclysmSyncMessage() implements CustomPacketPayload {
+
+        public static final Type<RequestCataclysmSyncMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(
+                        BiomesOfCataclysms.MODID,
+                        "request_cataclysm_sync"
+                ));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf,
+                RequestCataclysmSyncMessage> STREAM_CODEC =
+                StreamCodec.of(
+                        (buf, msg) -> {},                  // niente da scrivere
+                        buf -> new RequestCataclysmSyncMessage()
+                );
+
+        @Override
+        public Type<RequestCataclysmSyncMessage> type() {
+            return TYPE;
+        }
+
+        public static void handleData(RequestCataclysmSyncMessage message,
+                                      IPayloadContext context) {
+
+            if (context.flow() != PacketFlow.SERVERBOUND) return;
+
+            context.enqueueWork(() -> {
+
+                if (!(context.player() instanceof ServerPlayer player)) return;
+
+                ServerLevel level = (ServerLevel) player.level();
+
+                PersistentData.MapVariables vars =
+                        PersistentData.MapVariables.get(level);
+
+                System.out.println("Received client packet request. Sending type 1 data packet");
+
+                // risposta immediata
+                PacketDistributor.sendToPlayer(
+                        player,
+                        new DedicatedSyncMessage(
+                                vars.cataclysm,
+                                vars.state,
+                                vars.deletedBiomes
+                        )
+                );
+            });
         }
     }
 }

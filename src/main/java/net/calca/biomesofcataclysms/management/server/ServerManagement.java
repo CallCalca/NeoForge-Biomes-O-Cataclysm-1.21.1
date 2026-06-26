@@ -9,6 +9,7 @@ import net.calca.biomesofcataclysms.data.RuntimeData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.data.cataclysm.sunburn.SunBurnStage;
 import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
+import net.calca.biomesofcataclysms.management.chunk.ChunkQueueManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
@@ -40,7 +41,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.*;
 
-import static net.calca.biomesofcataclysms.management.chunk.sunburn.SunBurnProcessorHelper.getSunBurnStage;
+import static net.calca.biomesofcataclysms.data.cataclysm.sunburn.SunBurnStage.getSunBurnStage;
 import static net.calca.biomesofcataclysms.management.chunk.sunburn.SunBurnProcessorHelper.resetSunBurntWaves;
 
 // Done with the help of https://github.com/CoFH/CoFHCore/blob/1.19.x/src/main/java/cofh/core/event/AreaEffectEvents.java
@@ -48,10 +49,147 @@ import static net.calca.biomesofcataclysms.management.chunk.sunburn.SunBurnProce
 @EventBusSubscriber(modid = BiomesOfCataclysms.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class ServerManagement {
 
+    private static void countDown(PersistentData.MapVariables variables, MinecraftServer server, int ticks, String nextBiome) {
+        if (ticks >= 0 && ticks % 20 == 0) {
+            int seconds = ticks / 20;
+            Component cataclysm = Component.literal(variables.cataclysm).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD);
+            Component secondsText = Component.literal(String.valueOf(seconds)).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD);
+            String translationKey = Util.makeDescriptionId("biome", ResourceLocation.parse(nextBiome));
+            Component nextBiomeText = Component.translatable(translationKey).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD);
+
+            if (ticks <= 200){
+                Component msg;
+                if (ticks == 200) {
+                    if (variables.difficulty >= 3){
+                        nextBiomeText = Component.literal("?7/?fhs?")
+                                .withStyle(ChatFormatting.RED)
+                                .withStyle(ChatFormatting.BOLD)
+                                .withStyle(ChatFormatting.OBFUSCATED);
+                    }
+                    msg = Component.translatable("event.biomesofcataclysms.countDown", nextBiomeText, cataclysm, secondsText)
+                            .withStyle(ChatFormatting.GREEN);
+                } else if (ticks == 0) {
+                    for (ServerLevel level : server.getAllLevels()){
+                        ModUtils.sendChatMessage(level, Component.translatable("event.biomesofcataclysms.biomeAffected", nextBiomeText, cataclysm)
+                                .withStyle(ChatFormatting.GREEN));
+                    }
+
+                    msg = secondsText.copy().append("...");
+                } else {
+                    msg = secondsText.copy().append("...");
+                }
+                if (ticks > 0) {
+                    if (variables.difficulty < 4){
+                        for (ServerLevel level : server.getAllLevels()) {
+                            ModUtils.sendChatMessage(level, msg);
+                        }
+                    }
+                    if (!(seconds % 2 == 0)) {
+                        if (variables.difficulty < 4){
+                            float pitch = (float) (((10 - seconds) - 1) * 0.06);
+                            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                                player.playNotifySound(SoundEvents.COMPARATOR_CLICK, SoundSource.MASTER, 0.6F, 0.6F + pitch);
+                            }
+                        }
+                    } else {
+                        if (variables.difficulty < 4){
+                            float pitch = (float) (((10 - seconds) - 2) * 0.08);
+                            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                                player.playNotifySound(SoundEvents.COMPARATOR_CLICK, SoundSource.MASTER, 0.6F, 0.4F + pitch);
+                            }
+                        }
+                    }
+                } else {
+                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                        ModUtils.playLocalBiomeAffectedSound(player);
+                    }
+                }
+
+            }else{
+                if (variables.difficulty == 0){
+                    if (variables.tickToNextCataclysm == 30*20){
+                        for (ServerLevel level : server.getAllLevels()){
+                            ModUtils.sendChatMessage(level, Component.translatable("event.biomesofcataclysms.countDown", nextBiomeText, cataclysm, secondsText)
+                                    .withStyle(ChatFormatting.YELLOW));
+                        }
+                    }
+                }else if (variables.difficulty == 1){
+                    if (variables.tickToNextCataclysm == 20*20) {
+                        for (ServerLevel level : server.getAllLevels()) {
+                            ModUtils.sendChatMessage(level, Component.translatable("event.biomesofcataclysms.countDown", nextBiomeText, cataclysm, secondsText)
+                                    .withStyle(ChatFormatting.YELLOW));
+                        }
+                    }
+                }
+            }
+
+
+
+        }
+
+    }
+    private static void gracePeriodCheck(PersistentData.MapVariables globalVars, MinecraftServer server) {
+        if (globalVars.graceCheckHappen) return;
+        int ticks = globalVars.gracePeriod;
+        if (ticks == 0) {
+            globalVars.graceCheckHappen = true;
+            for (ServerLevel level : server.getAllLevels()) {
+                ModUtils.sendChatMessage(level, Component.translatable("command.biomesofcataclysms.endOfGracePeriod")
+                        .withStyle(ChatFormatting.YELLOW));
+                for (ServerPlayer player : level.players()) {
+                    player.playNotifySound(
+                            SoundEvents.NOTE_BLOCK_BASS.value(), // suono
+                            SoundSource.MASTER,                 // categoria audio
+                            1F,                               // volume
+                            0.8F                                // pitch
+                    );
+                }
+            }
+            if (globalVars.deletedBiomes.size() != globalVars.totalBiomes){
+                ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.setColor(BossEvent.BossBarColor.BLUE);
+            }
+        }
+    }
+
+    private static void spawnMonstersAroundEternalDarkness(Player player, Level level) {
+        // Eseguiamo il codice solo sul Server e ogni 100 tick (5 secondi)
+        if (!level.isClientSide() && level.getGameTime() % 100 == 0) {
+            ServerLevel serverLevel = (ServerLevel) level;
+
+            // Definisci un raggio d'azione (es. da 0 a 32 blocchi)
+            int radius = 16;
+            int xOffset = player.getRandom().nextIntBetweenInclusive(-radius, radius);
+            int zOffset = player.getRandom().nextIntBetweenInclusive(-radius, radius);
+            int yOffset = player.getRandom().nextIntBetweenInclusive(-4, 4); // Cerca anche un po' sopra/sotto
+
+            BlockPos spawnPos = player.blockPosition().offset(xOffset, yOffset, zOffset);
+
+            // Scegliamo un mostro a caso (es. uno Zombie)
+            EntityType<? extends Mob> entityType = EntityType.ZOMBIE;
+
+            // Verifichiamo se il blocco è adatto allo spawn (aria per l'entità, solido sotto)
+            if (serverLevel.getBlockState(spawnPos).isAir() && serverLevel.getBlockState(spawnPos.below()).isSolid()) {
+
+                // Spawna l'entità ignorando le restrizioni di luce e distanza di vanilla
+                Mob mob = entityType.create(serverLevel);
+                if (mob != null) {
+                    mob.moveTo(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5, player.getRandom().nextFloat() * 360F, 0.0F);
+
+                    // Finalizza lo spawn (imposta equipaggiamento, effetti, ecc.)
+                    mob.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(spawnPos), MobSpawnType.NATURAL, null);
+
+                    serverLevel.addFreshEntity(mob);
+                }
+            }
+        }
+
+    }
+
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(server.overworld());
+
 
         if (globalVars.state != 2) return;
         AllCataclysms type = ModUtils.decodeCataclysmFromString(globalVars.cataclysm);
@@ -59,7 +197,7 @@ public class ServerManagement {
 
         if (globalVars.tickFloodHeights(server.overworld())) {
             // Se l'altezza è cambiata, chiediamo al manager di rimettere in coda i chunk PARTIAL
-            ChunkProcessor.wakeUpPartialChunks(server.overworld());
+            ChunkQueueManager.wakeUpPartialChunks(server.overworld());
         }
 
         int initialDestructionSpeed = 4;
@@ -88,41 +226,41 @@ public class ServerManagement {
                         dynamicDestructionSpeed = 1;
                         initialDestructionSpeed = 1;
                     } else if (globalVars.pcPower == 1) { //Low
-                        if (ChunkProcessor.hasChunksInRadius(level, pPos, 8)) {
+                        if (ModUtils.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 2;
                         } else {
                             dynamicDestructionSpeed = 1;
                         }
                         initialDestructionSpeed = 2;
                     } else if (globalVars.pcPower == 2) { //Medium
-                        if (ChunkProcessor.hasChunksInRadius(level, pPos, 8)) {
+                        if (ModUtils.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 3;
                         } else {
                             dynamicDestructionSpeed = 2;
                         }
                         initialDestructionSpeed = 3;
                     } else if (globalVars.pcPower == 3) { //High
-                        if (ChunkProcessor.hasChunksInRadius(level, pPos, 8)) {
+                        if (ModUtils.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 4;
                         } else {
                             dynamicDestructionSpeed = 2;
                         }
                         initialDestructionSpeed = 4;
                     } else if (globalVars.pcPower == 4) { // Estreme
-                        if (ChunkProcessor.hasChunksInRadius(level, pPos, 8)) {
+                        if (ModUtils.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 4;
-                        } else if (ChunkProcessor.hasChunksInRadius(level, pPos, 16)) {
+                        } else if (ModUtils.hasChunksInRadius(level, pPos, 16)) {
                             dynamicDestructionSpeed = 3;
                         } else {
                             dynamicDestructionSpeed = 1;
                         }
                         initialDestructionSpeed = 4;
                     } else if (globalVars.pcPower == 5) { // Max
-                        if (ChunkProcessor.hasChunksInRadius(level, pPos, 8)) {
+                        if (ModUtils.hasChunksInRadius(level, pPos, 8)) {
                             dynamicDestructionSpeed = 4;
-                        } else if (ChunkProcessor.hasChunksInRadius(level, pPos, 16)) {
+                        } else if (ModUtils.hasChunksInRadius(level, pPos, 16)) {
                             dynamicDestructionSpeed = 3;
-                        } else if (ChunkProcessor.hasChunksInRadius(level, pPos, 24)) {
+                        } else if (ModUtils.hasChunksInRadius(level, pPos, 24)) {
                             dynamicDestructionSpeed = 3;
                         } else {
                             dynamicDestructionSpeed = 2;
@@ -135,7 +273,7 @@ public class ServerManagement {
 
                     if (globalVars.deletedBiomes.contains(biomeId)) {
                         if (server.getTickCount() % 2000 == 0) {
-                            ChunkProcessor.rescueMissedChunks(level, 8);
+                            ChunkQueueManager.rescueMissedChunks(level, 8);
                         }
                         break;
                     }
@@ -147,8 +285,8 @@ public class ServerManagement {
             }
 
             if (server.getTickCount() % 20 == 0) {
-                ChunkProcessor.cleanDynamicQueue(level);
-                ChunkProcessor.refreshDynamicQueue(level);
+                ChunkQueueManager.cleanDynamicQueue(level);
+                ChunkQueueManager.refreshDynamicQueue(level);
             }
 
             if (globalVars.difficulty == 5 && dynamicDestructionSpeed > 3) {
@@ -158,7 +296,7 @@ public class ServerManagement {
             if (type != AllCataclysms.SUN_BURNT && type != AllCataclysms.FLOODED){
                 ChunkProcessor.processInitialQueue(level, initialDestructionSpeed);
             }else{
-                boolean queueEmpty = ChunkProcessor.isQueueEmpty(level);
+                boolean queueEmpty = ChunkQueueManager.isQueueEmpty(level);
                 boolean timerElapsed = (level.getGameTime() % 200 == 0); // 200 tick = 10 secondi
                 if (queueEmpty || timerElapsed) {
                     resetSunBurntWaves(level);
@@ -286,150 +424,21 @@ public class ServerManagement {
 
     }
 
-    private static void countDown(PersistentData.MapVariables variables, MinecraftServer server, int ticks, String nextBiome) {
-        if (ticks >= 0 && ticks % 20 == 0) {
-            int seconds = ticks / 20;
-            Component cataclysm = Component.literal(variables.cataclysm).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD);
-            Component secondsText = Component.literal(String.valueOf(seconds)).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD);
-            String translationKey = Util.makeDescriptionId("biome", ResourceLocation.parse(nextBiome));
-            Component nextBiomeText = Component.translatable(translationKey).withStyle(ChatFormatting.RED).withStyle(ChatFormatting.BOLD);
-
-            if (ticks <= 200){
-                    Component msg;
-                    if (ticks == 200) {
-                        if (variables.difficulty >= 3){
-                         nextBiomeText = Component.literal("?7/?fhs?")
-                                         .withStyle(ChatFormatting.RED)
-                                         .withStyle(ChatFormatting.BOLD)
-                                         .withStyle(ChatFormatting.OBFUSCATED);
-                        }
-                        msg = Component.translatable("event.biomesofcataclysms.countDown", nextBiomeText, cataclysm, secondsText)
-                                .withStyle(ChatFormatting.GREEN);
-                    } else if (ticks == 0) {
-                        for (ServerLevel level : server.getAllLevels()){
-                            ModUtils.sendChatMessage(level, Component.translatable("event.biomesofcataclysms.biomeAffected", nextBiomeText, cataclysm)
-                                    .withStyle(ChatFormatting.GREEN));
-                        }
-
-                        msg = secondsText.copy().append("...");
-                    } else {
-                        msg = secondsText.copy().append("...");
-                    }
-                    if (ticks > 0) {
-                        if (variables.difficulty < 4){
-                            for (ServerLevel level : server.getAllLevels()) {
-                                ModUtils.sendChatMessage(level, msg);
-                            }
-                        }
-                        if (!(seconds % 2 == 0)) {
-                            if (variables.difficulty < 4){
-                                float pitch = (float) (((10 - seconds) - 1) * 0.06);
-                                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                                    player.playNotifySound(SoundEvents.COMPARATOR_CLICK, SoundSource.MASTER, 0.6F, 0.6F + pitch);
-                                }
-                            }
-                        } else {
-                            if (variables.difficulty < 4){
-                                float pitch = (float) (((10 - seconds) - 2) * 0.08);
-                                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                                    player.playNotifySound(SoundEvents.COMPARATOR_CLICK, SoundSource.MASTER, 0.6F, 0.4F + pitch);
-                                }
-                            }
-                        }
-                    } else {
-                        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                            ModUtils.playLocalBiomeAffectedSound(player);
-                        }
-                    }
-
-            }else{
-                if (variables.difficulty == 0){
-                    if (variables.tickToNextCataclysm == 30*20){
-                        for (ServerLevel level : server.getAllLevels()){
-                            ModUtils.sendChatMessage(level, Component.translatable("event.biomesofcataclysms.countDown", nextBiomeText, cataclysm, secondsText)
-                                    .withStyle(ChatFormatting.YELLOW));
-                        }
-                    }
-                }else if (variables.difficulty == 1){
-                    if (variables.tickToNextCataclysm == 20*20) {
-                        for (ServerLevel level : server.getAllLevels()) {
-                            ModUtils.sendChatMessage(level, Component.translatable("event.biomesofcataclysms.countDown", nextBiomeText, cataclysm, secondsText)
-                                    .withStyle(ChatFormatting.YELLOW));
-                        }
-                    }
-                }
-            }
-
-
-
-        }
-
-    }
-    private static void gracePeriodCheck(PersistentData.MapVariables globalVars, MinecraftServer server) {
-        if (globalVars.graceCheckHappen) return;
-        int ticks = globalVars.gracePeriod;
-        if (ticks == 0) {
-            globalVars.graceCheckHappen = true;
-            for (ServerLevel level : server.getAllLevels()) {
-                ModUtils.sendChatMessage(level, Component.translatable("command.biomesofcataclysms.endOfGracePeriod")
-                        .withStyle(ChatFormatting.YELLOW));
-                for (ServerPlayer player : level.players()) {
-                    player.playNotifySound(
-                            SoundEvents.NOTE_BLOCK_BASS.value(), // suono
-                            SoundSource.MASTER,                 // categoria audio
-                            1F,                               // volume
-                            0.8F                                // pitch
-                    );
-                }
-            }
-            if (globalVars.deletedBiomes.size() != globalVars.totalBiomes){
-                ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.setColor(BossEvent.BossBarColor.BLUE);
-            }
-        }
-    }
-
-
-
-    private static void spawnMonstersAroundEternalDarkness(Player player, Level level) {
-        // Eseguiamo il codice solo sul Server e ogni 100 tick (5 secondi)
-        if (!level.isClientSide() && level.getGameTime() % 100 == 0) {
-            ServerLevel serverLevel = (ServerLevel) level;
-
-            // Definisci un raggio d'azione (es. da 0 a 32 blocchi)
-            int radius = 16;
-            int xOffset = player.getRandom().nextIntBetweenInclusive(-radius, radius);
-            int zOffset = player.getRandom().nextIntBetweenInclusive(-radius, radius);
-            int yOffset = player.getRandom().nextIntBetweenInclusive(-4, 4); // Cerca anche un po' sopra/sotto
-
-            BlockPos spawnPos = player.blockPosition().offset(xOffset, yOffset, zOffset);
-
-            // Scegliamo un mostro a caso (es. uno Zombie)
-            EntityType<? extends Mob> entityType = EntityType.ZOMBIE;
-
-            // Verifichiamo se il blocco è adatto allo spawn (aria per l'entità, solido sotto)
-            if (serverLevel.getBlockState(spawnPos).isAir() && serverLevel.getBlockState(spawnPos.below()).isSolid()) {
-
-                // Spawna l'entità ignorando le restrizioni di luce e distanza di vanilla
-                Mob mob = entityType.create(serverLevel);
-                if (mob != null) {
-                    mob.moveTo(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5, player.getRandom().nextFloat() * 360F, 0.0F);
-
-                    // Finalizza lo spawn (imposta equipaggiamento, effetti, ecc.)
-                    mob.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(spawnPos), MobSpawnType.NATURAL, null);
-
-                    serverLevel.addFreshEntity(mob);
-                }
-            }
-        }
-
-    }
-
-
     @SubscribeEvent
     public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
         if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
         if (event.getSpawnType() != MobSpawnType.NATURAL) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
+        if (ModUtils.decodeCataclysmFromString(globalVars.cataclysm) != AllCataclysms.ETERNAL_ECLIPSE) return;
+
+        BlockPos pos = event.getPos();
+        Holder<Biome> biome = level.getBiome(pos);
+        Optional<ResourceKey<Biome>> biomeKey = biome.unwrapKey();
+        if (biomeKey.isEmpty()) return;
+        String biomeId = biomeKey.get().location().toString();
+        if (!globalVars.deletedBiomes.contains(biomeId)) return;
 
         event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
     }
@@ -439,6 +448,16 @@ public class ServerManagement {
         if (event.getEntity().getType().getCategory() != MobCategory.MONSTER) return;
         if (event.getSpawnType() != MobSpawnType.NATURAL) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
+        if (ModUtils.decodeCataclysmFromString(globalVars.cataclysm) != AllCataclysms.ETERNAL_ECLIPSE) return;
+
+        BlockPos pos = event.getEntity().getOnPos();
+        Holder<Biome> biome = level.getBiome(pos);
+        Optional<ResourceKey<Biome>> biomeKey = biome.unwrapKey();
+        if (biomeKey.isEmpty()) return;
+        String biomeId = biomeKey.get().location().toString();
+        if (!globalVars.deletedBiomes.contains(biomeId)) return;
 
         event.setResult(MobSpawnEvent.PositionCheck.Result.SUCCEED);
     }

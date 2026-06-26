@@ -1,27 +1,37 @@
 package net.calca.biomesofcataclysms;
 
 import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.RuntimeData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
+import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
+import net.calca.biomesofcataclysms.data.chunk.ChunkState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 
+import java.util.Map;
 import java.util.Objects;
+
+import static net.calca.biomesofcataclysms.management.chunk.ChunkQueueManager.getOrCreateDimChunkMap;
 
 public class ModUtils {
     public static boolean isPlayerInGame(ServerPlayer player) {
         return player != null && !player.isSpectator();
     }
 
-    public static void sendChatMessage(ServerLevel level, Component textComponent) {
-        for (ServerPlayer player : level.players()) {
+    public static void sendChatMessage(LevelAccessor level, Component textComponent) {
+        for (Player player : level.players()) {
             player.sendSystemMessage(textComponent);
         }
     }
@@ -112,6 +122,22 @@ public class ModUtils {
                 .append(errorDescription.copy()
                         .withStyle(style -> style.withColor(ChatFormatting.GRAY).withBold(false)));
     }
+    public static MutableComponent buildSuccessMessage(Component targetPoint, MutableComponent successDescription,
+                                                       String procedureUsed, int timeElapsed){
+        ChatFormatting chatFormatting;
+        chatFormatting = ChatFormatting.GREEN;
+        MutableComponent infos = Component.translatable("success.biomesofcataclysms.successInfos", procedureUsed, timeElapsed);
+
+        return Component.empty()
+                .append(Component.translatable("success.biomesofcataclysms.operationSuccess", targetPoint)
+                        .withStyle(chatFormatting, ChatFormatting.BOLD))
+                .append(Component.literal("\n"))
+                .append(successDescription.copy()
+                        .withStyle(style -> style.withColor(ChatFormatting.GRAY).withBold(false)))
+                .append(Component.literal("\n"))
+                .append(infos.copy()
+                        .withStyle(style -> style.withColor(ChatFormatting.GRAY).withBold(false)));
+    }
 
     public static void playLocalErrorSound(Player player){
         if (player == null) return;
@@ -134,7 +160,6 @@ public class ModUtils {
 
     }
 
-
     public static String decodeCataclysmFromEnum(AllCataclysms allCataclysms){
         if (allCataclysms == AllCataclysms.DESTROYED){
             return Component.translatable("possibleCataclysm.biomesofcataclysms.destroyed").getString();
@@ -142,6 +167,8 @@ public class ModUtils {
             return Component.translatable("possibleCataclysm.biomesofcataclysms.flooded").getString();
         } else if (allCataclysms == AllCataclysms.SUN_BURNT) {
             return Component.translatable("possibleCataclysm.biomesofcataclysms.sun_burnt").getString();
+        }else if (allCataclysms == AllCataclysms.ETERNAL_ECLIPSE) {
+            return Component.translatable("possibleCataclysm.biomesofcataclysms.eternal_eclipse").getString();
         }else{
             return ModUtils.buildErrorMessage(false, 10, Component.literal("decodeCataclysmFromEnum"),
                     Component.translatable("error.biomesofcataclysms.error10")).getString();
@@ -154,8 +181,45 @@ public class ModUtils {
             return AllCataclysms.FLOODED;
         } else if (Objects.equals(cataclysm, Component.translatable("possibleCataclysm.biomesofcataclysms.sun_burnt").getString())) {
             return AllCataclysms.SUN_BURNT;
+        } else if (Objects.equals(cataclysm, Component.translatable("possibleCataclysm.biomesofcataclysms.eternal_eclipse").getString())) {
+            return AllCataclysms.ETERNAL_ECLIPSE;
         }else{
             return null;
         }
+    }
+
+
+    public static boolean hasChunksInRadius(ServerLevel level, ChunkPos center, int radius) {
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(level.dimension());
+        if (registry == null || registry.isEmpty()) return false;
+
+        int radiusSq = radius * radius;
+
+        for (ChunkInstance mod : registry.values()) {
+            if (mod.state == ChunkState.DONE) continue;
+
+            int dx = mod.pos.x - center.x;
+            int dz = mod.pos.z - center.z;
+
+            if (dx * dx + dz * dz <= radiusSq) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    public static ChunkInstance getOrCreateChunkMod(ServerLevel level, ChunkPos pos) {
+        ResourceKey<Level> dim = level.dimension();
+        Map<Long, ChunkInstance> dimMap = getOrCreateDimChunkMap(dim);
+
+        long packed = pos.toLong();
+        ChunkInstance mod = dimMap.get(packed);
+
+        if (mod == null) {
+            mod = new ChunkInstance(dim, pos, level);
+            dimMap.put(packed, mod);
+        }
+
+        return mod;
     }
 }

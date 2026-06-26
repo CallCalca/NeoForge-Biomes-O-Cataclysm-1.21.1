@@ -97,6 +97,7 @@
   "possibleCataclysm.biomesofcataclysms.destroyed": "毁灭",
   "possibleCataclysm.biomesofcataclysms.flooded": "洪水",
   "possibleCataclysm.biomesofcataclysms.sun_burnt": "太阳风暴",
+  "possibleCataclysm.biomesofcataclysms.eternal_eclipse": "永恒蚀日",
 
   "//": "--- 错误 ---",
   "error.biomesofcataclysms.criticalWarning": "[严重警告- %s]",

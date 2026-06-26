@@ -3,6 +3,7 @@ package net.calca.biomesofcataclysms.management.chunk.flood;
 import net.calca.biomesofcataclysms.data.RuntimeData;
 import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
 import net.calca.biomesofcataclysms.data.chunk.ChunkState;
+import net.calca.biomesofcataclysms.management.chunk.ChunkQueueManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -17,23 +18,7 @@ import net.minecraft.world.level.material.Fluids;
 import java.util.Map;
 import java.util.Set;
 
-import static net.calca.biomesofcataclysms.management.chunk.ChunkProcessor.registerDynamicChunk;
-
 public class FloodProcessorHelper {
-    public static void resetFloodWaves(ServerLevel level) {
-        ResourceKey<Level> dim = level.dimension();
-        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
-        if (registry == null) return;
-
-        for (ChunkInstance mod : registry.values()) {
-            if (mod.state == ChunkState.PARTIAL) {
-                mod.state = ChunkState.QUEUED; // Torna disponibile
-                // Opzionale: lo riaggiungiamo alla coda se non c'è già
-                registerDynamicChunk(level, mod.pos);
-            }
-        }
-    }
-
     private static void floodChunkSlice(ServerLevel level, ChunkPos pos, Set<String> targetBiomes, int startY, int endY) {
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         int flags = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
@@ -82,4 +67,20 @@ public class FloodProcessorHelper {
             }
         }
     }
+
+
+    public static void resetFloodWaves(ServerLevel level) {
+        ResourceKey<Level> dim = level.dimension();
+        Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
+        if (registry == null) return;
+
+        for (ChunkInstance mod : registry.values()) {
+            if (mod.state == ChunkState.PARTIAL) {
+                mod.state = ChunkState.QUEUED; // Torna disponibile
+                // Opzionale: lo riaggiungiamo alla coda se non c'è già
+                ChunkQueueManager.registerDynamicChunk(level, mod.pos);
+            }
+        }
+    }
+
 }

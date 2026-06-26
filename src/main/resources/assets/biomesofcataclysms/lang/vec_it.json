@@ -97,6 +97,7 @@
   "possibleCataclysm.biomesofcataclysms.destroyed": "Distruzion",
   "possibleCataclysm.biomesofcataclysms.flooded": "Inundazion",
   "possibleCataclysm.biomesofcataclysms.sun_burnt": "Tempesta solàr",
+  "possibleCataclysm.biomesofcataclysms.eternal_eclipse": "Eclissi Eterna",
 
   "//": "--- ERRORI ---",
   "error.biomesofcataclysms.criticalWarning": "[AVISO CRITICO- %s]",

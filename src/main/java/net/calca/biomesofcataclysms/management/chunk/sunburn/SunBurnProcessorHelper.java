@@ -6,6 +6,7 @@ import net.calca.biomesofcataclysms.data.cataclysm.sunburn.SunBurnStage;
 import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
 import net.calca.biomesofcataclysms.data.chunk.ChunkState;
 import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
+import net.calca.biomesofcataclysms.management.chunk.ChunkQueueManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
@@ -26,8 +27,6 @@ import net.minecraft.world.phys.AABB;
 import java.util.Map;
 import java.util.Set;
 
-import static net.calca.biomesofcataclysms.management.chunk.ChunkProcessor.registerDynamicChunk;
-
 public class SunBurnProcessorHelper {
 
     public static void applySunBurntChunk(ServerLevel level,
@@ -37,7 +36,7 @@ public class SunBurnProcessorHelper {
 
         String activeBiomeId = targetBiomes.iterator().next();
         long elapsed = vars.getSunBurnElapsedTicks(activeBiomeId, level);
-        SunBurnStage stage = getSunBurnStage(elapsed);
+        SunBurnStage stage = SunBurnStage.getSunBurnStage(elapsed);
 
         // --- 1. STADIO INSTANT_TRANSFORM: OTTIMIZZATO PER LAG E LAVA ---
         if (stage == SunBurnStage.INSTANT_TRANSFORM) {
@@ -172,6 +171,7 @@ public class SunBurnProcessorHelper {
         }
     }
 
+    //Questo metodo dovrebbe essere in grado di evitare la generazione di colate di lava fluttuanti. Dovrebbe piazzare la lava solo su blocchi di terreno
     private static void placeSmartLava(ServerLevel level, BlockPos pos) {
         // Controllo critico: se sotto c'è aria o un fluido non solido, DEVE essere fluida
         if (level.isEmptyBlock(pos.below()) || !level.getBlockState(pos.below()).isSolid()) {
@@ -198,9 +198,8 @@ public class SunBurnProcessorHelper {
         }
     }
 
-    /**
-     * Gestione carbone/charcoal per il legno rimosso
-     */
+    //Il legno non si rompe e basta, ma ha una piccola percentuale di probabilità di divenire blocco di carbone. Invece,
+    //se la probabilità è a sfavore, il blocco sparisce, ma ha una piccola probabilità di generare un item di Charcoal.
     private static void handleWoodSpecialEffects(ServerLevel level, BlockPos pos, RandomSource random) {
         if (random.nextFloat() < 0.70f) {
             if (random.nextFloat() < 0.40f) {
@@ -218,6 +217,8 @@ public class SunBurnProcessorHelper {
             }
         }
     }
+
+    //Questo metodo cerca di capire quale è, in un chunk specifico, il bioma subito sulla superficie di un chunk.
     public static boolean hasExposedBiome(ServerLevel level, ChunkPos pos, Set<String> targetBiomes) {
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         for (int x = 0; x < 16; x++) {
@@ -236,6 +237,7 @@ public class SunBurnProcessorHelper {
         }
         return false; // Il bioma è interamente coperto da altri biomi o roccia
     }
+
     public static void resetSunBurntWaves(ServerLevel level) {
         ResourceKey<Level> dim = level.dimension();
         Map<Long, ChunkInstance> registry = RuntimeData.CHUNKS.get(dim);
@@ -245,17 +247,12 @@ public class SunBurnProcessorHelper {
             if (mod.state == ChunkState.PARTIAL) {
                 mod.state = ChunkState.QUEUED; // Torna disponibile
                 // Opzionale: lo riaggiungiamo alla coda se non c'è già
-                registerDynamicChunk(level, mod.pos);
+                ChunkQueueManager.registerDynamicChunk(level, mod.pos);
             }
         }
     }
-    public static SunBurnStage getSunBurnStage(long elapsedTicks) {
-        if (elapsedTicks < 20L * 60L) return SunBurnStage.FIRE; //Dura 60 secondi
-        if (elapsedTicks < 20L * 105L) return SunBurnStage.BURNING; //Dura altri 45
-        if (elapsedTicks < 20L * 180L) return SunBurnStage.HOT; //Dura 75
-        if (elapsedTicks < 20L * 270L) return SunBurnStage.MELTING; // Final dura 90 secondi
-        return SunBurnStage.INSTANT_TRANSFORM; // Dopo 165 secondi totali
-    }
+
+    //Un tentativo è un blocco che verrà elaborato in uno specifico chunk. In base alla fase del Sun Burn, i tentativi ad ogni wave cambiano.
     private static int getSunBurnAttempts(SunBurnStage stage) {
         return switch (stage) {
             case FIRE -> 15;
@@ -265,6 +262,8 @@ public class SunBurnProcessorHelper {
             case INSTANT_TRANSFORM -> 0;
         };
     }
+
+    //I seguenti metodi cercano di capire se è possibile piazzare un po di fuoco sul blocco che è stato scelto dal tentativo.
     private static void tryPlaceAdjacentFire(ServerLevel level, BlockPos pos) {
         int flags = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS | Block.UPDATE_KNOWN_SHAPE;
 
@@ -289,6 +288,8 @@ public class SunBurnProcessorHelper {
         }
         return false;
     }
+
+    //Metodi di Util che ritornano true se il blocco dato in input coincide con uno del registro.
     private static boolean isGlass(BlockState state) {
         return state.is(Blocks.GLASS)
                 || state.is(Blocks.TINTED_GLASS)
@@ -468,10 +469,13 @@ public class SunBurnProcessorHelper {
                 || state.is(Blocks.ROOTED_DIRT)
                 || state.is(Blocks.MUDDY_MANGROVE_ROOTS);
     }
+
+    //Usato per generare l'effetto della rottura del vetro
     private static void explodeSingleBlock(ServerLevel level, BlockPos pos, BlockState state) {
         level.levelEvent(2001, pos, Block.getId(state));
         level.destroyBlock(pos, false);
     }
+
     private static BlockPos findRandomSurfacePos(ServerLevel level, ChunkPos chunk, RandomSource random) {
         int x = chunk.getMinBlockX() + random.nextInt(16);
         int z = chunk.getMinBlockZ() + random.nextInt(16);

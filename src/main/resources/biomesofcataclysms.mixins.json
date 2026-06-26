@@ -4,7 +4,8 @@
   "package": "net.calca.biomesofcataclysms.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "ClientLevelMixin"
+    "ClientLevelMixin",
+    "DisableZombieSunBurnMixin"
   ],
   "client": [
     "ClientLevelDataAccessor"

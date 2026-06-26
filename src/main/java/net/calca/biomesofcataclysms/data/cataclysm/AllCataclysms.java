@@ -4,5 +4,5 @@ public enum AllCataclysms {
     DESTROYED,
     FLOODED,
     SUN_BURNT,
-    ETERNAL_DARKNESS;
+    ETERNAL_ECLIPSE;
 }

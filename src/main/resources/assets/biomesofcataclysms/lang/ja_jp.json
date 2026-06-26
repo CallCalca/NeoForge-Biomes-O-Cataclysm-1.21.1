@@ -97,6 +97,7 @@
   "possibleCataclysm.biomesofcataclysms.destroyed": "破壊",
   "possibleCataclysm.biomesofcataclysms.flooded": "洪水",
   "possibleCataclysm.biomesofcataclysms.sun_burnt": "太陽嵐",
+  "possibleCataclysm.biomesofcataclysms.eternal_eclipse": "永遠の蝕",
 
   "//": "--- エラー ---",
   "error.biomesofcataclysms.criticalWarning": "[重大警告- %s]",

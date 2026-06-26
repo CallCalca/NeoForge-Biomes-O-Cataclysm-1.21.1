@@ -97,6 +97,7 @@
   "possibleCataclysm.biomesofcataclysms.destroyed": "Zerstörung",
   "possibleCataclysm.biomesofcataclysms.flooded": "Flut",
   "possibleCataclysm.biomesofcataclysms.sun_burnt": "Sonnensturm",
+  "possibleCataclysm.biomesofcataclysms.eternal_eclipse": "Ewige Finsternis",
 
   "//": "--- FEHLER ---",
   "error.biomesofcataclysms.criticalWarning": "[KRITISCHE WARNUNG- %s]",
