@@ -8,6 +8,8 @@ import net.calca.biomesofcataclysms.data.chunk.ChunkState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceKey;
@@ -19,7 +21,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.biome.Biome;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
 
@@ -138,6 +143,20 @@ public class ModUtils {
                 .append(infos.copy()
                         .withStyle(style -> style.withColor(ChatFormatting.GRAY).withBold(false)));
     }
+    public static MutableComponent buildSimpleDebugMessage(Component targetPoint, MutableComponent successDescription){
+        ChatFormatting chatFormatting;
+        chatFormatting = ChatFormatting.DARK_GRAY;
+        LocalTime localTime = LocalTime.now();
+        DateTimeFormatter formattatore = DateTimeFormatter.ofPattern("HH:mm:ss");
+        String stringaOra = localTime.format(formattatore);
+
+        return Component.empty()
+                .append(Component.translatable("debug.biomesofcataclysms.simpleDebug", stringaOra, targetPoint)
+                        .withStyle(chatFormatting, ChatFormatting.BOLD))
+                .append(Component.literal(": "))
+                .append(successDescription.copy()
+                        .withStyle(style -> style.withColor(ChatFormatting.GRAY).withBold(false)));
+    }
 
     public static void playLocalErrorSound(Player player){
         if (player == null) return;
@@ -221,5 +240,60 @@ public class ModUtils {
         }
 
         return mod;
+    }
+
+    /**
+     * @param pos -> La pos del blocco
+     * @param range -> se imposto 5, otterro un numero da 0 a 5
+     * @param seed -> è possibile impostare qualunque valore (i valori negativi diventano positivi e impostare valore 0 o 1 non cambierà l'output del risultato).
+     * @return -> ritorna un risultato specifico per quel pos in quel seed (!= da 0 e 1 e > 0). il risultato va da 0 a range compreso.
+     */
+    public static int putBlockPosThroughSeed(BlockPos pos, int range, int seed){
+        if (seed == 0) seed = 1;
+        seed = Math.abs(seed);
+
+        // 1. Usiamo numeri primi grandi per mescolare i bit delle coordinate.
+        // Questo crea un effetto "rumore casuale" ma deterministico.
+        long hash = pos.getX() * 312121L * seed + pos.getY() * 456123L * seed + pos.getZ() * 917329L * seed;
+
+        // 2. Applichiamo una funzione di mescolamento ulteriore (simile a come fa Java con gli Hash)
+        hash = (hash ^ (hash >>> 16)) * 0x45d9f3bL * seed;
+        hash = (hash ^ (hash >>> 16)) * 0x45d9f3bL * seed;
+        hash = hash ^ (hash >>> 16);
+
+        // 3. Rendiamo il valore positivo usando Math.abs
+        long positivo = Math.abs(hash);
+
+        // 4. Usiamo il modulo (%) per mappare il risultato sul range desiderato.
+        // 'positivo % range' restituisce un numero tra 0 e range (0, 1, 2, .... range-1).
+        // Aggiungiamo 1 per portarlo esattamente da 1 a range.
+        return (int) (positivo % range) + 1;
+
+    }
+
+    public static boolean isGameRunning(LevelAccessor level){
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
+        return globalVars.state == 2;
+    }
+    public static boolean isGameRunningWithCataclysm(LevelAccessor level, AllCataclysms cataclysms){
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
+        return globalVars.state == 2 && decodeCataclysmFromString(globalVars.cataclysm) == cataclysms;
+    }
+
+
+    public static boolean getHumidityOnPos(ServerLevel level, BlockPos pos, float minHumidity) {
+        net.minecraft.world.level.biome.Biome biome = level.getBiome(pos).value();
+
+        // Invocazione tramite metodo getter pubblico
+        float humidity = biome.getModifiedClimateSettings().downfall();
+
+        return humidity >= minHumidity;
+    }
+
+    public static String getBiomeID(LevelAccessor level, BlockPos pos){
+        Holder<Biome> biomeHolder = level.getBiome(pos);
+        return biomeHolder.unwrapKey()
+                .map(key -> key.location().toString())
+                .orElse("");
     }
 }

@@ -7,6 +7,7 @@ import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
 import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
 import net.calca.biomesofcataclysms.data.chunk.ChunkState;
 import net.calca.biomesofcataclysms.management.chunk.ChunkQueueManager;
+import net.calca.biomesofcataclysms.management.server.tmep.MoonController;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.ListTag;
@@ -57,7 +58,11 @@ public class PersistentData {
     public static void init(FMLCommonSetupEvent event) {
         BiomesOfCataclysms.addNetworkMessage(SavedDataSyncMessage.TYPE, SavedDataSyncMessage.STREAM_CODEC, SavedDataSyncMessage::handleData);
         BiomesOfCataclysms.addNetworkMessage(DedicatedSyncMessage.TYPE, DedicatedSyncMessage.STREAM_CODEC, DedicatedSyncMessage::handleData);
-        BiomesOfCataclysms.addNetworkMessage(RequestCataclysmSyncMessage.TYPE, RequestCataclysmSyncMessage.STREAM_CODEC, RequestCataclysmSyncMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(BloodMoonEventsSyncMessage.TYPE, BloodMoonEventsSyncMessage.STREAM_CODEC, BloodMoonEventsSyncMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(RequestDedicatedSyncMessage.TYPE, RequestDedicatedSyncMessage.STREAM_CODEC, RequestDedicatedSyncMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(RequestBloodMoonEventsSyncMessage.TYPE, RequestBloodMoonEventsSyncMessage.STREAM_CODEC, RequestBloodMoonEventsSyncMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(RealServerTimeSyncMessage.TYPE, RealServerTimeSyncMessage.STREAM_CODEC, RealServerTimeSyncMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(RequestRealServerTimeMessage.TYPE, RequestRealServerTimeMessage.STREAM_CODEC, RequestRealServerTimeMessage::handleData);
     }
 
     @EventBusSubscriber
@@ -84,8 +89,10 @@ public class PersistentData {
 
         public final Map<ResourceKey<Level>, ChunkProcessor.DimensionState> initialStates = new HashMap<>();
         public final Map<ResourceKey<Level>, ChunkProcessor.DimensionState> dynamicStates = new HashMap<>();
-        public final Map<String, Integer> floodedHeights = new HashMap<>();
-        public final Map<String, Long> sunBurnStartTicks = new HashMap<>();
+        public Map<String, Integer> floodedHeights = new HashMap<>();
+        public Map<String, Integer> eternalEclipseBloodMoonEvents = new HashMap<>();
+        public Map<String, Long> sunBurnStartTick = new HashMap<>();
+        public Map<String, Long> eternalEclipseStartTick = new HashMap<>();
 
         public boolean debugMode = false;
         public boolean graceCheckHappen = true;
@@ -174,12 +181,28 @@ public class PersistentData {
                 }
             }
 
+            eternalEclipseBloodMoonEvents.clear();
+            if (nbt.contains("eternalEclipseBloodMoonEvents", Tag.TAG_COMPOUND)) {
+                CompoundTag eternalEclipseBloodMoonEventsTag = nbt.getCompound("eternalEclipseBloodMoonEvents");
+                for (String biomeId : eternalEclipseBloodMoonEventsTag.getAllKeys()) {
+                    eternalEclipseBloodMoonEvents.put(biomeId, eternalEclipseBloodMoonEventsTag.getInt(biomeId));
+                }
+            }
+
             // --- Caricamento Sun Burn Start Ticks ---
-            sunBurnStartTicks.clear();
-            if (nbt.contains("sunBurnStartTicks", Tag.TAG_COMPOUND)) {
-                CompoundTag sunBurnTag = nbt.getCompound("sunBurnStartTicks");
+            sunBurnStartTick.clear();
+            if (nbt.contains("sunBurnStartTick", Tag.TAG_COMPOUND)) {
+                CompoundTag sunBurnTag = nbt.getCompound("sunBurnStartTick");
                 for (String biomeId : sunBurnTag.getAllKeys()) {
-                    sunBurnStartTicks.put(biomeId, sunBurnTag.getLong(biomeId));
+                    sunBurnStartTick.put(biomeId, sunBurnTag.getLong(biomeId));
+                }
+            }
+
+            eternalEclipseStartTick.clear();
+            if (nbt.contains("eternalEclipseStartTick", Tag.TAG_COMPOUND)) {
+                CompoundTag sunBurnTag = nbt.getCompound("eternalEclipseStartTick");
+                for (String biomeId : sunBurnTag.getAllKeys()) {
+                    eternalEclipseStartTick.put(biomeId, sunBurnTag.getLong(biomeId));
                 }
             }
 
@@ -239,7 +262,9 @@ public class PersistentData {
             Map<ResourceKey<Level>, ChunkProcessor.DimensionState> initialStatesCopy;
             Map<ResourceKey<Level>, ChunkProcessor.DimensionState> dynamicStatesCopy;
             Map<String, Integer> floodedHeightsCopy;
-            Map<String, Long> sunBurnStartTicksCopy;
+            Map<String, Integer> eternalEclipseBloodMoonEventsCopy;
+            Map<String, Long> sunBurnStartTickCopy;
+            Map<String, Long> eternalEclipseStartTicksCopy;
 
             List<String> shuffledBiomesCopy;
             List<String> overworldBiomeListCopy;
@@ -267,7 +292,9 @@ public class PersistentData {
                 initialStatesCopy = new HashMap<>(initialStates);
                 dynamicStatesCopy = new HashMap<>(dynamicStates);
                 floodedHeightsCopy = new HashMap<>(floodedHeights);
-                sunBurnStartTicksCopy = new HashMap<>(sunBurnStartTicks);
+                eternalEclipseBloodMoonEventsCopy = new HashMap<>(eternalEclipseBloodMoonEvents);
+                sunBurnStartTickCopy = new HashMap<>(sunBurnStartTick);
+                eternalEclipseStartTicksCopy = new HashMap<>(eternalEclipseStartTick);
 
                 // 🔥 COPIA MANUALE SICURA (FIX DEFINITIVO)
                 shuffledBiomesCopy = new ArrayList<>();
@@ -318,11 +345,23 @@ public class PersistentData {
             }
             nbt.put("floodedHeights", floodedHeightsTag);
 
-            CompoundTag sunBurnStartTicksTag = new CompoundTag();
-            for (var entry : sunBurnStartTicksCopy.entrySet()) {
-                sunBurnStartTicksTag.putLong(entry.getKey(), entry.getValue());
+            CompoundTag eternalEclipseBloodMoonEventsTag = new CompoundTag();
+            for (var entry : eternalEclipseBloodMoonEventsCopy.entrySet()) {
+                eternalEclipseBloodMoonEventsTag.putInt(entry.getKey(), entry.getValue());
             }
-            nbt.put("sunBurnStartTicks", sunBurnStartTicksTag);
+            nbt.put("eternalEclipseBloodMoonEvents", eternalEclipseBloodMoonEventsTag);
+
+            CompoundTag sunBurnStartTickTag = new CompoundTag();
+            for (var entry : sunBurnStartTickCopy.entrySet()) {
+                sunBurnStartTickTag.putLong(entry.getKey(), entry.getValue());
+            }
+            nbt.put("sunBurnStartTick", sunBurnStartTickTag);
+
+            CompoundTag eternalEclipseStartTicksTag = new CompoundTag();
+            for (var entry : eternalEclipseStartTicksCopy.entrySet()) {
+                eternalEclipseStartTicksTag.putLong(entry.getKey(), entry.getValue());
+            }
+            nbt.put("eternalEclipseStartTick", eternalEclipseStartTicksTag);
 
 
             // =========================
@@ -408,6 +447,7 @@ public class PersistentData {
                 buildOverworldBiomesList();
             }
             this.syncData(level, true, false);
+            //System.out.println(shuffledBiomes.size() + ": " + shuffledBiomes);
         }
         private void buildOverworldBiomesList() {
             overworldBiomeList.clear();
@@ -427,6 +467,18 @@ public class PersistentData {
                             || id.startsWith(Biomes.END_BARRENS.location().toString())
                             || id.startsWith(Biomes.SMALL_END_ISLANDS.location().toString())
             );
+        }
+
+        public void removeNetherEndBiomesFromPool(ServerLevel level){
+            //In questo modo la lista dei Shuffle diventa la lista dell' overworld
+            this.shuffledBiomes = this.overworldBiomeList;
+            this.totalBiomes = this.shuffledBiomes.size();
+            this.biomesToAffect = this.totalBiomes;
+            Collections.shuffle(this.shuffledBiomes);
+
+            this.nextBiomeToAffect = this.shuffledBiomes.get(0);
+            this.syncData(level, true, false);
+            //System.out.println(shuffledBiomes.size() + ": " + shuffledBiomes);
         }
 
         public void selectNextBiomeGlobal(MinecraftServer server) {
@@ -663,11 +715,52 @@ public class PersistentData {
         }
 
         public void startSunBurn(String biomeId, ServerLevel level) {
-            sunBurnStartTicks.putIfAbsent(biomeId, level.getGameTime());
+            sunBurnStartTick.putIfAbsent(biomeId, level.getGameTime());
             setDirty();
         }
         public long getSunBurnElapsedTicks(String biomeId, ServerLevel level) {
-            return level.getGameTime() - sunBurnStartTicks.getOrDefault(biomeId, level.getGameTime());
+            return level.getGameTime() - sunBurnStartTick.getOrDefault(biomeId, level.getGameTime());
+        }
+
+        public void startEternalEclipseForBiome(String biomeId, ServerLevel level) {
+            eternalEclipseStartTick.putIfAbsent(biomeId, level.getGameTime());
+            this.setDirty();
+        }
+        public long getEternalEclipseElapsedTicks(String biomeId, ServerLevel level) {
+            return level.getGameTime() - eternalEclipseStartTick.getOrDefault(biomeId, level.getGameTime());
+        }
+        public int getBloodMoonEvents(String biomeId, ServerLevel level) {
+            return eternalEclipseBloodMoonEvents.getOrDefault(biomeId, level.getMinBuildHeight());
+        }
+        public void setBloodMoonEvents(String biomeId, int events, ServerLevel level) {
+            eternalEclipseBloodMoonEvents.putIfAbsent(biomeId, events);
+            this.setDirty();
+            sendBloodMoonEventsClientPacket(level);
+        }
+        public void addBloodMoonForDeletedBiomes(ServerLevel level, String biomeId) {
+            if (this.deletedBiomes.isEmpty()) return;
+
+            boolean changed = false;
+
+                // Recuperiamo il valore attuale (usando 0 come default se non presente)
+                int currentEvents = this.eternalEclipseBloodMoonEvents.getOrDefault(biomeId, 0);
+
+                // Aumentiamo solo se è strettamente minore di 4
+                if (currentEvents < 4) {
+                    this.eternalEclipseBloodMoonEvents.put(biomeId, currentEvents + 1);
+                    changed = true;
+            }
+
+            // Salviamo e sincronizziamo i dati sul client una sola volta per l'intera operazione
+            if (changed) {
+                this.setDirty();
+                // Questo metodo invierà il BloodMoonEventsSynchMessage con la mappa aggiornata
+                this.sendBloodMoonEventsClientPacket(level);
+            }
+        }
+        public void registerBiomeOnBloodEventsMap(String biomeId) {
+            if (this.deletedBiomes.isEmpty()) return;
+            this.eternalEclipseBloodMoonEvents.put(biomeId, 0);
         }
         //------------------------------------------
 
@@ -699,8 +792,14 @@ public class PersistentData {
         }
 
         public void sendDedicatedOnlyClientPacket(LevelAccessor world) {
-            if (world instanceof Level level && !world.isClientSide()) {
+            if (!world.isClientSide()) {
                 PacketDistributor.sendToAllPlayers(new DedicatedSyncMessage(this.cataclysm, this.state, this.deletedBiomes));
+            }
+        }
+
+        public void sendBloodMoonEventsClientPacket(LevelAccessor world) {
+            if (!world.isClientSide()) {
+                PacketDistributor.sendToAllPlayers(new BloodMoonEventsSyncMessage(this.eternalEclipseBloodMoonEvents));
             }
         }
 
@@ -809,28 +908,127 @@ public class PersistentData {
             });
         }
     }
+    public record BloodMoonEventsSyncMessage(Map<String, Integer> eternalEclipseBloodMoonEvents) implements CustomPacketPayload {
 
-    public record RequestCataclysmSyncMessage() implements CustomPacketPayload {
+        public static final Type<BloodMoonEventsSyncMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(BiomesOfCataclysms.MODID, "blood_moon_events_sync"));
 
-        public static final Type<RequestCataclysmSyncMessage> TYPE =
+        public static final StreamCodec<RegistryFriendlyByteBuf, BloodMoonEventsSyncMessage> STREAM_CODEC =
+                StreamCodec.of(
+                        (buf, msg) -> {
+                            if (msg.eternalEclipseBloodMoonEvents == null) {
+                                buf.writeInt(0); // Scrive dimensione 0 se la mappa è null
+                            } else {
+                                // Scrive la dimensione della mappa
+                                buf.writeInt(msg.eternalEclipseBloodMoonEvents.size());
+                                // Scrive ogni coppia Chiave-Valore (String, Integer)
+                                msg.eternalEclipseBloodMoonEvents.forEach((key, value) -> {
+                                    buf.writeUtf(key);
+                                    buf.writeInt(value);
+                                });
+                            }
+                        },
+                        buf -> {
+                            // Legge la dimensione della mappa
+                            int size = buf.readInt();
+                            Map<String, Integer> map = new HashMap<>();
+                            for (int i = 0; i < size; i++) {
+                                String key = buf.readUtf();
+                                int value = buf.readInt();
+                                map.put(key, value);
+                            }
+                            return new BloodMoonEventsSyncMessage(map);
+                        }
+                );
+
+        @Override
+        public Type<BloodMoonEventsSyncMessage> type() {
+            return TYPE;
+        }
+
+        public static void handleData(final BloodMoonEventsSyncMessage message, final IPayloadContext context) {
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                // Sincronizza la mappa sul client all'interno delle tue variabili globali salvate
+                // NOTA: Assicurati che MapVariables.clientSide.eternalEclipseBloodMoonEvents esista ed sia una Map<String, Integer>
+                if (MapVariables.clientSide.eternalEclipseBloodMoonEvents == null) {
+                    MapVariables.clientSide.eternalEclipseBloodMoonEvents = new HashMap<>();
+                }
+
+                MapVariables.clientSide.eternalEclipseBloodMoonEvents.clear();
+                if (message.eternalEclipseBloodMoonEvents != null) {
+                    MapVariables.clientSide.eternalEclipseBloodMoonEvents.putAll(message.eternalEclipseBloodMoonEvents);
+                }
+
+                MoonController.isDirty = true;
+
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal(e.getMessage()));
+                return null;
+            });
+        }
+    }
+    public record RealServerTimeSyncMessage(long rawServerTime, int vanillaMoonPhase) implements CustomPacketPayload {
+
+        public static final Type<RealServerTimeSyncMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(
+                        BiomesOfCataclysms.MODID,
+                        "real_server_time_sync"
+                ));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, RealServerTimeSyncMessage> STREAM_CODEC =
+                StreamCodec.of(
+                        (buf, msg) -> {
+                            buf.writeLong(msg.rawServerTime);     // Scrive il tempo
+                            buf.writeInt(msg.vanillaMoonPhase);  // Scrive la fase lunare (0-7)
+                        },
+                        buf -> new RealServerTimeSyncMessage(
+                                buf.readLong(), // Legge il tempo
+                                buf.readInt()   // Legge la fase lunare
+                        )
+                );
+
+        @Override
+        public Type<RealServerTimeSyncMessage> type() {
+            return TYPE;
+        }
+
+        public static void handleData(final RealServerTimeSyncMessage message, final IPayloadContext context) {
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                // Sincronizziamo il tempo reale e la fase lunare vanilla direttamente nel MoonController!
+                MoonController.realServerTime = message.rawServerTime;
+                MoonController.secondLunarPhase = message.vanillaMoonPhase;
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal(e.getMessage()));
+                return null;
+            });
+        }
+    }
+
+    public record RequestDedicatedSyncMessage() implements CustomPacketPayload {
+
+        public static final Type<RequestDedicatedSyncMessage> TYPE =
                 new Type<>(ResourceLocation.fromNamespaceAndPath(
                         BiomesOfCataclysms.MODID,
                         "request_cataclysm_sync"
                 ));
 
         public static final StreamCodec<RegistryFriendlyByteBuf,
-                RequestCataclysmSyncMessage> STREAM_CODEC =
+                RequestDedicatedSyncMessage> STREAM_CODEC =
                 StreamCodec.of(
                         (buf, msg) -> {},                  // niente da scrivere
-                        buf -> new RequestCataclysmSyncMessage()
+                        buf -> new RequestDedicatedSyncMessage()
                 );
 
         @Override
-        public Type<RequestCataclysmSyncMessage> type() {
+        public Type<RequestDedicatedSyncMessage> type() {
             return TYPE;
         }
 
-        public static void handleData(RequestCataclysmSyncMessage message,
+        public static void handleData(RequestDedicatedSyncMessage message,
                                       IPayloadContext context) {
 
             if (context.flow() != PacketFlow.SERVERBOUND) return;
@@ -858,4 +1056,83 @@ public class PersistentData {
             });
         }
     }
+    public record RequestBloodMoonEventsSyncMessage() implements CustomPacketPayload {
+
+        public static final Type<RequestBloodMoonEventsSyncMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(
+                        BiomesOfCataclysms.MODID,
+                        "request_blood_moon_events_sync"
+                ));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, RequestBloodMoonEventsSyncMessage> STREAM_CODEC =
+                StreamCodec.of(
+                        (buf, msg) -> {},                  // Niente da scrivere (pacchetto vuoto di richiesta)
+                        buf -> new RequestBloodMoonEventsSyncMessage()
+                );
+
+        @Override
+        public Type<RequestBloodMoonEventsSyncMessage> type() {
+            return TYPE;
+        }
+
+        public static void handleData(RequestBloodMoonEventsSyncMessage message, IPayloadContext context) {
+            if (context.flow() != PacketFlow.SERVERBOUND) return;
+
+            context.enqueueWork(() -> {
+                if (!(context.player() instanceof ServerPlayer player)) return;
+
+                ServerLevel level = (ServerLevel) player.level();
+
+                // Recuperiamo i dati salvati sul server
+                PersistentData.MapVariables vars = PersistentData.MapVariables.get(level);
+
+                System.out.println("Received client packet request. Sending Blood Moon events data packet.");
+
+                // Risposta immediata al client con il nuovo pacchetto e la mappa dei dati
+                // NOTA: Assicurati che vars.eternalEclipseBloodMoonEvents esista nel tuo PersistentData
+                PacketDistributor.sendToPlayer(
+                        player,
+                        new BloodMoonEventsSyncMessage(vars.eternalEclipseBloodMoonEvents)
+                );
+            });
+        }
+    }
+    public record RequestRealServerTimeMessage() implements CustomPacketPayload {
+
+        public static final Type<RequestRealServerTimeMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(
+                        BiomesOfCataclysms.MODID,
+                        "request_real_server_time"
+                ));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, RequestRealServerTimeMessage> STREAM_CODEC =
+                StreamCodec.of(
+                        (buf, msg) -> {}, // Pacchetto vuoto di richiesta
+                        buf -> new RequestRealServerTimeMessage()
+                );
+
+        @Override
+        public Type<RequestRealServerTimeMessage> type() {
+            return TYPE;
+        }
+
+        public static void handleData(RequestRealServerTimeMessage message, IPayloadContext context) {
+            if (context.flow() != PacketFlow.SERVERBOUND) return;
+
+            context.enqueueWork(() -> {
+                if (!(context.player() instanceof ServerPlayer player)) return;
+
+                // Prendiamo il tempo REALE e la FASE LUNARE vanilla dal server
+                long rawServerTime = player.serverLevel().getDayTime();
+                int vanillaMoonPhase = player.serverLevel().getMoonPhase();
+
+                // Rispondiamo immediatamente inviando entrambi i dati al singolo giocatore
+                PacketDistributor.sendToPlayer(
+                        player,
+                        new RealServerTimeSyncMessage(rawServerTime, vanillaMoonPhase)
+                );
+            });
+        }
+    }
+
 }

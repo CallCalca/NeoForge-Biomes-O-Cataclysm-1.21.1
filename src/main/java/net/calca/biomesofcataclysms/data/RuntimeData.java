@@ -20,4 +20,6 @@ public class RuntimeData {
         public static final Map<ResourceKey<Level>, ChunkProcessor.DimensionState> INITIAL_STATES = new HashMap<>();
         public static final Map<ResourceKey<Level>, ChunkProcessor.DimensionState> DYNAMIC_STATES = new HashMap<>();
         public static final Map<ResourceKey<Level>, Map<Long, ChunkInstance>> CHUNKS = new HashMap<>();
+
+        public static boolean isEternalEclipseApocalypseActive = false;
 }

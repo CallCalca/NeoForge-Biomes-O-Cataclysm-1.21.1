@@ -4,6 +4,7 @@ package net.calca.biomesofcataclysms.command.common;
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.RuntimeData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -254,6 +255,11 @@ public class ModCommandsCommon {
                         .withColor(ChatFormatting.LIGHT_PURPLE)
                         .withBold(true)
                 );
+
+        if (random == AllCataclysms.ETERNAL_ECLIPSE) {
+            variables.removeNetherEndBiomesFromPool(level);
+            RuntimeData.isEternalEclipseApocalypseActive = true;
+        }
 
 
         BiomesOfCataclysms.queueServerWork(10, () -> {

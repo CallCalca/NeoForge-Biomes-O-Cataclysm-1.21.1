@@ -5,8 +5,11 @@ import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
+import net.calca.biomesofcataclysms.data.cataclysm.eternaleclipse.EternalEclipseStage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -15,19 +18,31 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.animal.Cat;
+import net.minecraft.world.entity.animal.Ocelot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.AnimalTameEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.checkerframework.checker.units.qual.A;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 @EventBusSubscriber(modid = BiomesOfCataclysms.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class PlayerManagement {
@@ -257,6 +272,10 @@ public class PlayerManagement {
         PersistentData.MapVariables variables = PersistentData.MapVariables.get(serverLevel);
         Player player = event.getEntity();
         ProgressBarManager.addPlayerOnLogIn(player);
+        PacketDistributor.sendToPlayer((ServerPlayer) player, new PersistentData.BloodMoonEventsSyncMessage(variables.eternalEclipseBloodMoonEvents));
+        PacketDistributor.sendToPlayer((ServerPlayer) player, new PersistentData.DedicatedSyncMessage(variables.cataclysm,
+                                                                                    variables.state,
+                                                                                    variables.deletedBiomes));
 
         if (variables.dataCondition == -1) {
             MutableComponent errorMsg = ModUtils.buildErrorMessage(
@@ -330,6 +349,42 @@ public class PlayerManagement {
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(Objects.requireNonNull(player.getServer()).overworld());
+
+        //Invisibility del gatto
+
+        // Se il giocatore possiede un gatto ed entra nel bioma colpito
+        if (ModUtils.isGameRunningWithCataclysm(player.level(), AllCataclysms.ETERNAL_ECLIPSE)){
+            CompoundTag nbt = player.getPersistentData();
+            int invisDuration = 2400; // 2 minuti
+            if (hasATamedCat(player)
+                    && globalVars.deletedBiomes.contains(ModUtils.getBiomeID(player.level(), player.getOnPos()))
+                    && EternalEclipseStage.isBloodMoonEventActiveOnBiome(player.serverLevel(), ModUtils.getBiomeID(player.level(), player.getOnPos()))) {
+                // Applichiamo l'effetto Invisibilità per 3 secondi (60 tick), livello 0
+                // Usiamo 3 secondi così se il gatto si allontana, l'effetto svanisce rapidamente
+
+                // ISe il giocatore possiede un effetto di invisibility con una durata maggiore, allora non applichiamo quello del gatto.
+                if (!player.hasEffect(MobEffects.INVISIBILITY) || Objects.requireNonNull(player.getEffect(MobEffects.INVISIBILITY)).getDuration() < 2400){
+                    player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY,
+                            nbt.getInt("catInvisEffect"), 0, true, true, true));
+                    nbt.putInt("catInvisEffect", nbt.getInt("catInvisEffect")-1); //Riduco la durata dell'effetto
+                }
+            } else if (hasATamedCat(player)) { //Se il giocatore possiede un animale ma non si trova in un deleted biome
+                //Quando è stato attivato l'effetto attraverso il gatto, lo rimuovo uscendo dal bioma deleted.
+                if (nbt.getInt("catInvisEffect") != invisDuration){
+                    player.removeEffect(MobEffects.INVISIBILITY);
+                }
+                nbt.putInt("catInvisEffect", invisDuration); //Impostiamo la variabile
+            }else if (!hasATamedCat(player)){
+                //Quando è stato attivato l'effetto attraverso il gatto, lo rimuovo uscendo dal bioma deleted.
+                if (nbt.getInt("catInvisEffect") != invisDuration){
+                    player.removeEffect(MobEffects.INVISIBILITY);
+                }
+                nbt.putInt("catInvisEffect", invisDuration); //Impostiamo la variabile
+            }
+        }
+
+
+        //Scritta actionbar
         if (globalVars.difficulty == 4){
             MutableComponent message = Component.translatable("event.biomesofcataclysms.playerTick.actionbar")
                     .append(Component.literal(" "))
@@ -343,7 +398,7 @@ public class PlayerManagement {
             ModUtils.sendLocalActionBarMessageTo(player, message);
 
         }else{
-            if (!player.level().isClientSide && player.level().getGameTime() % 10 == 0) {
+            if (!player.level().isClientSide && player.level().getGameTime() % 5 == 0) {
                 Holder<Biome> biomeHolder = player.level().getBiome(player.blockPosition());
                 Optional<ResourceKey<Biome>> biomeKey = biomeHolder.unwrapKey();
 
@@ -372,6 +427,92 @@ public class PlayerManagement {
 
     }
 
+
+    private static final String CAT_COUNT_KEY = "tamedCatCount";
+    private static final String OCELOT_OWNER_KEY = "OcelotOwnerUUID";
+
+    // 1. INCREMENTO QUANDO UN GATTO VIENE ADDOMESTICATO
+    @SubscribeEvent
+    public static void onAnimalTame(AnimalTameEvent event) {
+        if (event.getAnimal() instanceof Cat && event.getTamer() instanceof Player player) {
+            incrementCatCount(player);
+        }
+    }
+
+    // 2. INCREMENTO QUANDO UN OCELOT DIVENTA FIDUCIOSO
+    @SubscribeEvent
+    public static void onOcelotTrust(PlayerInteractEvent.EntityInteract event) {
+        if (event.getTarget() instanceof Ocelot ocelot && !ocelot.level().isClientSide()) {
+            Player player = event.getEntity();
+
+            // Leggiamo se l'ocelot è diventato "Trusting"
+            CompoundTag vanillaTag = new CompoundTag();
+            ocelot.addAdditionalSaveData(vanillaTag);
+
+            if (vanillaTag.getBoolean("Trusting")) {
+                CompoundTag customData = ocelot.getPersistentData();
+
+                // Se non abbiamo ancora registrato questo ocelot per il giocatore
+                if (!customData.contains(OCELOT_OWNER_KEY)) {
+                    // Salviamo l'UUID del giocatore sull'Ocelot
+                    customData.putUUID(OCELOT_OWNER_KEY, player.getUUID());
+
+                    // Incrementiamo il contatore del giocatore
+                    incrementCatCount(player);
+                }
+            }
+        }
+    }
+
+    // 3. DECREMENTO ALLA MORTE DI CAT O OCELOT
+    @SubscribeEvent
+    public static void onCatOrOcelotDeath(LivingDeathEvent event) {
+        // --- CASO 1: GATTO ---
+        if (event.getEntity() instanceof Cat cat) {
+            if (cat.isTame() && cat.getOwner() instanceof Player player) {
+                decrementCatCount(player);
+            }
+        }
+        // --- CASO 2: OCELOT ---
+        else if (event.getEntity() instanceof Ocelot ocelot) {
+            CompoundTag customData = ocelot.getPersistentData();
+
+            // Verifichiamo se l'Ocelot ha un proprietario salvato
+            if (customData.hasUUID(OCELOT_OWNER_KEY)) {
+                UUID ownerUuid = customData.getUUID(OCELOT_OWNER_KEY);
+                Player player = ocelot.level().getPlayerByUUID(ownerUuid);
+
+                // Se il giocatore è online nel mondo, decrementiamo
+                if (player != null) {
+                    decrementCatCount(player);
+                }
+            }
+        }
+    }
+
+    // --- METODI UTILI PER GESTIRE L'NBT INT ---
+
+    private static void incrementCatCount(Player player) {
+        CompoundTag nbt = player.getPersistentData();
+        int currentCount = nbt.getInt(CAT_COUNT_KEY);
+        nbt.putInt(CAT_COUNT_KEY, currentCount + 1);
+    }
+
+    private static void decrementCatCount(Player player) {
+        CompoundTag nbt = player.getPersistentData();
+        int currentCount = nbt.getInt(CAT_COUNT_KEY);
+        // Math.max evita che il conteggio scenda sotto zero
+        nbt.putInt(CAT_COUNT_KEY, Math.max(0, currentCount - 1));
+    }
+
+    public static int getTamedCatCount(Player player) {
+        return player.getPersistentData().getInt(CAT_COUNT_KEY);
+    }
+
+    public static boolean hasATamedCat(Player player) {
+        return player.getPersistentData().getInt(CAT_COUNT_KEY) > 0;
+    }
+
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event){
         Player player = event.getEntity();
@@ -379,6 +520,22 @@ public class PlayerManagement {
         playerRespawnManager(globalVars, player);
     }
 
+    @SubscribeEvent
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        // Viene chiamato quando il giocatore respawna dopo la morte o torna dall'End
+        if (event.isWasDeath()) {
+            CompoundTag oldNbt = event.getOriginal().getPersistentData();
+            CompoundTag newNbt = event.getEntity().getPersistentData();
+
+            // Copia il tuo tag specifico dal vecchio giocatore al nuovo
+            if (oldNbt.contains(CAT_COUNT_KEY)) {
+                newNbt.putBoolean(CAT_COUNT_KEY, oldNbt.getBoolean(CAT_COUNT_KEY));
+            }
+            if (oldNbt.contains("catInvisEffect")) {
+                newNbt.putBoolean("catInvisEffect", oldNbt.getBoolean("catInvisEffect"));
+            }
+        }
+    }
 
 
 }

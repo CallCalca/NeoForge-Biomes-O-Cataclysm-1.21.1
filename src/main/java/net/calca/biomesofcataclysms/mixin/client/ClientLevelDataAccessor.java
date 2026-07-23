@@ -1,4 +1,4 @@
-package net.calca.biomesofcataclysms.mixin;
+package net.calca.biomesofcataclysms.mixin.client;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.Mixin;

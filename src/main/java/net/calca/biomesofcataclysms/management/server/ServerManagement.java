@@ -1,5 +1,8 @@
 package net.calca.biomesofcataclysms.management.server;
 
+import com.mojang.datafixers.FamilyOptic;
+import com.mojang.datafixers.TypeRewriteRule;
+import com.sun.jna.platform.win32.WinNT;
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 
 import net.calca.biomesofcataclysms.ModUtils;
@@ -7,6 +10,7 @@ import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.data.PersistentData;
 import net.calca.biomesofcataclysms.data.RuntimeData;
 import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
+import net.calca.biomesofcataclysms.data.cataclysm.eternaleclipse.EternalEclipseStage;
 import net.calca.biomesofcataclysms.data.cataclysm.sunburn.SunBurnStage;
 import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
 import net.calca.biomesofcataclysms.management.chunk.ChunkQueueManager;
@@ -23,21 +27,34 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.monster.Spider;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import org.apache.logging.log4j.core.jmx.Server;
 
 import java.util.*;
 
@@ -190,9 +207,37 @@ public class ServerManagement {
         MinecraftServer server = event.getServer();
         PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(server.overworld());
 
+        AllCataclysms type = ModUtils.decodeCataclysmFromString(globalVars.cataclysm);
 
         if (globalVars.state != 2) return;
-        AllCataclysms type = ModUtils.decodeCataclysmFromString(globalVars.cataclysm);
+        if (type == AllCataclysms.ETERNAL_ECLIPSE) {
+            if (server.overworld().getDayTime() % 24000L == EternalEclipseStage.getMoonEventStartTime(EternalEclipseStage.FIRST_BLOOD_MOON_EVENT)) {
+                globalVars.deletedBiomes.forEach(biomeId -> {
+                    if (globalVars.eternalEclipseBloodMoonEvents.getOrDefault(biomeId, -1) == 0){
+                        globalVars.addBloodMoonForDeletedBiomes(server.overworld(), biomeId);
+                    }else if (globalVars.eternalEclipseBloodMoonEvents.getOrDefault(biomeId, -1) == -1){
+                        globalVars.registerBiomeOnBloodEventsMap(biomeId);
+                        globalVars.addBloodMoonForDeletedBiomes(server.overworld(), biomeId);
+                    }
+                });
+            } else if (server.overworld().getDayTime() % 24000L == EternalEclipseStage.getMoonEventStartTime(EternalEclipseStage.SECOND_BLOOD_MOON_EVENT)) {
+                globalVars.deletedBiomes.forEach(biomeId -> {
+                    if (globalVars.eternalEclipseBloodMoonEvents.getOrDefault(biomeId, -1) == 1){
+                        globalVars.addBloodMoonForDeletedBiomes(server.overworld(), biomeId);
+                    }
+                });
+            } else if (server.overworld().getDayTime() % 24000L == EternalEclipseStage.getMoonEventStartTime(EternalEclipseStage.THIRD_BLOOD_MOON_EVENT)) {
+                globalVars.deletedBiomes.forEach(biomeId -> {
+                    if (globalVars.eternalEclipseBloodMoonEvents.getOrDefault(biomeId, -1) == 2){
+                        globalVars.addBloodMoonForDeletedBiomes(server.overworld(), biomeId);
+                    }
+                });
+            } else if (server.overworld().getDayTime() % 24000L == EternalEclipseStage.getMoonEventStartTime(EternalEclipseStage.FOURTH_BLOOD_MOON_EVENT))                 globalVars.deletedBiomes.forEach(biomeId -> {
+                if (globalVars.eternalEclipseBloodMoonEvents.getOrDefault(biomeId, -1) == 3){
+                    globalVars.addBloodMoonForDeletedBiomes(server.overworld(), biomeId);
+                }
+            });
+        }
 
 
         if (globalVars.tickFloodHeights(server.overworld())) {
@@ -295,7 +340,7 @@ public class ServerManagement {
 
             if (type != AllCataclysms.SUN_BURNT && type != AllCataclysms.FLOODED){
                 ChunkProcessor.processInitialQueue(level, initialDestructionSpeed);
-            }else{
+            }else {
                 boolean queueEmpty = ChunkQueueManager.isQueueEmpty(level);
                 boolean timerElapsed = (level.getGameTime() % 200 == 0); // 200 tick = 10 secondi
                 if (queueEmpty || timerElapsed) {
@@ -360,11 +405,13 @@ public class ServerManagement {
                     String biomeId = globalVars.nextBiomeToAffect;
                     globalVars.startSunBurn(biomeId, level);
                 }
-            }
-
-            if (type == AllCataclysms.FLOODED) {
+            }else if (type == AllCataclysms.FLOODED) {
                 for (ServerLevel level : server.getAllLevels()) {
                     globalVars.startFloodForBiome(globalVars.nextBiomeToAffect, level);
+                }
+            } else if (type == AllCataclysms.ETERNAL_ECLIPSE) {
+                for (ServerLevel level : server.getAllLevels()) {
+                    globalVars.startEternalEclipseForBiome(globalVars.nextBiomeToAffect, level);
                 }
             }
 
@@ -424,43 +471,258 @@ public class ServerManagement {
 
     }
 
+    // 1. GESTIONE CONTROLLI POSIZIONE SPAWN NATURALE + FILTRO SLIME (5%)
     @SubscribeEvent
     public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (event.getEntityType().getCategory() != MobCategory.MONSTER) return;
         if (event.getSpawnType() != MobSpawnType.NATURAL) return;
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
-        if (ModUtils.decodeCataclysmFromString(globalVars.cataclysm) != AllCataclysms.ETERNAL_ECLIPSE) return;
+        if (!ModUtils.isGameRunningWithCataclysm(level, AllCataclysms.ETERNAL_ECLIPSE)) return;
 
         BlockPos pos = event.getPos();
-        Holder<Biome> biome = level.getBiome(pos);
-        Optional<ResourceKey<Biome>> biomeKey = biome.unwrapKey();
-        if (biomeKey.isEmpty()) return;
-        String biomeId = biomeKey.get().location().toString();
+        String biomeId = ModUtils.getBiomeID(level, pos);
+
         if (!globalVars.deletedBiomes.contains(biomeId)) return;
 
+        // Se è uno Slime durante l'Eclissi/Luna di Sangue, ha solo il 5% di chance
+        if (event.getEntityType() == EntityType.SLIME) {
+            if (EternalEclipseStage.isBloodMoonEventActiveOnBiome(level, biomeId)) {
+                if (level.getRandom().nextFloat() > 0.05F) {
+                    event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.FAIL);
+                    return;
+                }
+            }
+        }
+
+        // Permette lo spawn dei mostri nei biomi del cataclisma ignorando i vincoli di luce vanilla
         event.setResult(MobSpawnEvent.SpawnPlacementCheck.Result.SUCCEED);
     }
 
+    // 2. CONTROLLO POSIZIONE FISICA (Collisioni e Spazio)
     @SubscribeEvent
     public static void onSpawnPositionCheck(MobSpawnEvent.PositionCheck event) {
-        if (event.getEntity().getType().getCategory() != MobCategory.MONSTER) return;
         if (event.getSpawnType() != MobSpawnType.NATURAL) return;
+        if (event.getEntity().getType().getCategory() != MobCategory.MONSTER) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
-        if (ModUtils.decodeCataclysmFromString(globalVars.cataclysm) != AllCataclysms.ETERNAL_ECLIPSE) return;
+        if (!ModUtils.isGameRunningWithCataclysm(level, AllCataclysms.ETERNAL_ECLIPSE)) return;
 
-        BlockPos pos = event.getEntity().getOnPos();
-        Holder<Biome> biome = level.getBiome(pos);
-        Optional<ResourceKey<Biome>> biomeKey = biome.unwrapKey();
-        if (biomeKey.isEmpty()) return;
-        String biomeId = biomeKey.get().location().toString();
+        // FIX: Usiamo blockPosition() invece di getOnPos()
+        BlockPos pos = event.getEntity().blockPosition();
+        String biomeId = ModUtils.getBiomeID(level, pos);
+
         if (!globalVars.deletedBiomes.contains(biomeId)) return;
 
-        event.setResult(MobSpawnEvent.PositionCheck.Result.SUCCEED);
+        // Lasciamo che Minecraft esegua il check Vanilla della posizione fisica per evitare che i mob nascano dentro i muri
     }
+
+    // 2. APPLICAZIONE MODIFICATORI ALLO SPAWN (SOLO POTENZIAMENTO BASE, NO MOLTIPLICAZIONE ORDA)
+    @SubscribeEvent
+    public static void onFinalizeSpawn(FinalizeSpawnEvent event) { // Usa MobSpawnEvent.FinalizeSpawn
+        if (event.getSpawnType() != MobSpawnType.NATURAL) return;
+        if (event.getEntity().getType().getCategory() != MobCategory.MONSTER) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
+        if (!ModUtils.isGameRunningWithCataclysm(level, AllCataclysms.ETERNAL_ECLIPSE)) return;
+
+        Mob mob = event.getEntity();
+        BlockPos pos = mob.blockPosition();
+        String biomeId = ModUtils.getBiomeID(level, pos);
+
+        if (!globalVars.deletedBiomes.contains(biomeId)) return;
+
+        long elapsedTicks = globalVars.getEternalEclipseElapsedTicks(biomeId, level);
+        EternalEclipseStage stage = EternalEclipseStage.getEternalEclipseStage(elapsedTicks);
+
+        // --- SOSTITUZIONE SCHELETRO ---
+        if (mob instanceof Skeleton) {
+            EntityType<? extends Mob> targetType = getEternalEclipseSkeletonType(level, pos, stage);
+
+            // Se lo scheletro attuale NON è del tipo richiesto dal cataclisma, lo sostituiamo!
+            if (mob.getType() != targetType) {
+                Mob replacement = targetType.create(level);
+
+                if (replacement != null) {
+                    // Copiamo posizione e rotazione dello scheletro originale
+                    replacement.moveTo(mob.getX(), mob.getY(), mob.getZ(), mob.getYRot(), mob.getXRot());
+
+                    // Inizializziamo il nuovo mob (questo scatenerà di nuovo l'evento onFinalizeSpawn
+                    // per la nuova entità, applicando anche eventuali equipaggiamenti di gioco)
+                    replacement.finalizeSpawn(level, event.getDifficulty(), event.getSpawnType(), null);
+
+                    // Aggiungiamo la variante (Bogged/Stray) al mondo
+                    level.addFreshEntity(replacement);
+
+                    // Annulliamo lo spawn dello scheletro base originale!
+                    event.setSpawnCancelled(true);
+                    return; // Usciamo: la nuova entità gestirà il suo evento e i suoi modificatori separatamente
+                }
+            }
+        }
+
+        // --- MODIFICATORI LUNA DI SANGUE ---
+        if (EternalEclipseStage.isBloodMoonEventActiveOnBiome(level, biomeId)) {
+            // Potenziamo l'entità nata naturalmente (funziona anche per Bogged e Stray grazie ad AbstractSkeleton)
+            applyBloodMoonModifiers(mob, level.getRandom());
+        }
+    }
+
+    // 3. NUOVO MOTORE DI SPAWN FORZATO E SPARPIAGLIATO (Ogni 5 tick, 1 solo mostro a distanza)
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (level.getGameTime() % 5 != 0) return;
+        if (level.players().isEmpty()) return;
+
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
+        if (!ModUtils.isGameRunningWithCataclysm(level, AllCataclysms.ETERNAL_ECLIPSE)) return;
+
+        for (ServerPlayer player : level.players()) {
+            BlockPos playerPos = player.blockPosition();
+
+            String biomeId = ModUtils.getBiomeID(level, playerPos);
+
+            if (!globalVars.deletedBiomes.contains(biomeId)) continue;
+
+            if (EternalEclipseStage.isBloodMoonEventActiveOnBiome(level, biomeId)) {
+                triggerBloodMoonSingleSpawn(level, player);
+            }
+        }
+    }
+
+    private static void triggerBloodMoonSingleSpawn(ServerLevel level, ServerPlayer player) {
+        RandomSource random = level.getRandom();
+
+        // Recuperiamo il bioma di riferimento del giocatore per il confronto
+        BlockPos playerPos = player.blockPosition();
+        String playerBiome = ModUtils.getBiomeID(level, playerPos);
+
+        BlockPos.MutableBlockPos spawnPos = new BlockPos.MutableBlockPos();
+        boolean posizioneValida = false;
+
+        // Definiamo un massimo di 5 tentativi per evitare loop infiniti che farebbero laggare il server
+        for (int tentativi = 0; tentativi < 5; tentativi++) {
+            double angle = random.nextDouble() * 2 * Math.PI;
+            double distance = 24 + random.nextInt(21);
+
+            int spawnX = (int) (player.getX() + Math.cos(angle) * distance);
+            int spawnZ = (int) (player.getZ() + Math.sin(angle) * distance);
+            int spawnY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, spawnX, spawnZ);
+
+            spawnPos.set(spawnX, spawnY, spawnZ);
+
+            // 1. CONTROLLO BIOMA: Verifichiamo se la coordinata selezionata appartiene allo stesso bioma
+            String spawnBiome = ModUtils.getBiomeID(level, spawnPos);
+            if (!spawnBiome.equals(playerBiome)) {
+                continue; // Fuori bioma, passa al prossimo tentativo
+            }
+
+            // 2. CONTROLLO FOGLIE: Controlliamo il blocco calpestabile (quello subito sotto spawnY)
+            // Nota: Heightmap.Types.MOTION_BLOCKING restituisce il blocco d'aria sopra la superficie solida/foglie
+            BlockPos bloccoSotto = spawnPos.below();
+            if (level.getBlockState(bloccoSotto).getBlock() instanceof LeavesBlock) {
+                continue; // È un blocco di foglie (albero), passa al prossimo tentativo
+            }
+
+            // Se ha superato entrambi i controlli, la posizione è perfetta
+            posizioneValida = true;
+            break;
+        }
+
+        // Se dopo 5 tentativi non abbiamo trovato un punto idoneo, interrompiamo lo spawn per questo tick
+        if (!posizioneValida) return;
+
+
+        PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
+        long elapsedTicks = globalVars.getEternalEclipseElapsedTicks(playerBiome, level);
+        EternalEclipseStage stage = EternalEclipseStage.getEternalEclipseStage(elapsedTicks);
+
+        EntityType<? extends Mob> mobType = getRandomBloodMoonMob(level, spawnPos, stage, random);
+        Mob mob = mobType.create(level);
+
+        if (mob != null) {
+            // Usiamo l'offset +0.5 per centrare il mob nel blocco ed evitare che spawni a cavallo tra due blocchi
+            mob.moveTo(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5, random.nextFloat() * 360F, 0.0F);
+
+            if (level.noCollision(mob) && mob.checkSpawnObstruction(level)) {
+                mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spawnPos), MobSpawnType.EVENT, null);
+                applyBloodMoonModifiers(mob, random);
+                level.addFreshEntity(mob);
+            }
+        }
+    }
+
+    // 5. METODO DI SUPPORTO PER GLI EQUIPAGGIAMENTI
+    static void applyBloodMoonModifiers(Mob mob, RandomSource random) {
+        if (mob instanceof net.minecraft.world.entity.monster.Spider spider) {
+            spider.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+        }
+        else if (mob instanceof net.minecraft.world.entity.monster.Zombie || mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton) {
+            boolean isDiamond = random.nextFloat() < 0.20F;
+
+            net.minecraft.world.item.Item helmet = isDiamond ? net.minecraft.world.item.Items.DIAMOND_HELMET : net.minecraft.world.item.Items.IRON_HELMET;
+            net.minecraft.world.item.Item chest = isDiamond ? net.minecraft.world.item.Items.DIAMOND_CHESTPLATE : net.minecraft.world.item.Items.IRON_CHESTPLATE;
+            net.minecraft.world.item.Item legs = isDiamond ? net.minecraft.world.item.Items.DIAMOND_LEGGINGS : net.minecraft.world.item.Items.IRON_LEGGINGS;
+            net.minecraft.world.item.Item boots = isDiamond ? net.minecraft.world.item.Items.DIAMOND_BOOTS : net.minecraft.world.item.Items.IRON_BOOTS;
+
+            mob.setItemSlot(EquipmentSlot.HEAD, new net.minecraft.world.item.ItemStack(helmet));
+            mob.setItemSlot(EquipmentSlot.CHEST, new net.minecraft.world.item.ItemStack(chest));
+            mob.setItemSlot(EquipmentSlot.LEGS, new net.minecraft.world.item.ItemStack(legs));
+            mob.setItemSlot(EquipmentSlot.FEET, new net.minecraft.world.item.ItemStack(boots));
+
+            if (mob instanceof net.minecraft.world.entity.monster.AbstractSkeleton) {
+                mob.setItemSlot(EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW));
+            } else {
+                net.minecraft.world.item.Item sword = isDiamond ? net.minecraft.world.item.Items.DIAMOND_SWORD : net.minecraft.world.item.Items.IRON_SWORD;
+                mob.setItemSlot(EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(sword));
+            }
+
+            mob.setDropChance(EquipmentSlot.HEAD, 0.01F);
+            mob.setDropChance(EquipmentSlot.CHEST, 0.01F);
+            mob.setDropChance(EquipmentSlot.LEGS, 0.01F);
+            mob.setDropChance(EquipmentSlot.FEET, 0.01F);
+            mob.setDropChance(EquipmentSlot.MAINHAND, 0.02F);
+        }
+        // Il blocco dei Creeper è stato rimosso qui perché ora se ne occupa il tick passivo con i fulmini veri!
+    }
+
+    private static EntityType<? extends Mob> getRandomBloodMoonMob(ServerLevel level, BlockPos pos, EternalEclipseStage stage, RandomSource random) {
+        float choice = random.nextFloat();
+        if (choice < 0.35F) return EntityType.ZOMBIE;
+        if (choice < 0.65F){
+            boolean correctStage = stage == EternalEclipseStage.START_SPREAD
+                    || stage == EternalEclipseStage.MYCELIUM_SPREAD
+                    || stage == EternalEclipseStage.FUNGUS_SPROUT
+                    || stage == EternalEclipseStage.CAVE_GERMINATION;
+            if (ModUtils.getHumidityOnPos(level, pos, EternalEclipseStage.HUMID_ENOUGH_TO_SPAWN_FUNGUS) && (correctStage)){
+                return EntityType.BOGGED;
+            }else if (correctStage){
+                return EntityType.STRAY;
+            }else{
+                return EntityType.SKELETON;
+            }
+        }
+        if (choice < 0.85F) return EntityType.CREEPER;
+        return EntityType.SPIDER;
+    }
+
+    private static EntityType<? extends Mob> getEternalEclipseSkeletonType(ServerLevel level, BlockPos pos, EternalEclipseStage stage) {
+            boolean correctStage = stage == EternalEclipseStage.START_SPREAD
+                    || stage == EternalEclipseStage.MYCELIUM_SPREAD
+                    || stage == EternalEclipseStage.FUNGUS_SPROUT
+                    || stage == EternalEclipseStage.CAVE_GERMINATION;
+            if (ModUtils.getHumidityOnPos(level, pos, EternalEclipseStage.HUMID_ENOUGH_TO_SPAWN_FUNGUS) && (correctStage)){
+                return EntityType.BOGGED;
+            }else if (correctStage){
+                return EntityType.STRAY;
+            }else{
+                return EntityType.SKELETON;
+            }
+        }
 
     //Used only in debug mode
     @SubscribeEvent

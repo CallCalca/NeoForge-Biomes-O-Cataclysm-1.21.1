@@ -1,19 +1,14 @@
-package net.calca.biomesofcataclysms.mixin;
+package net.calca.biomesofcataclysms.mixin.eternalEclipse;
 
 import net.calca.biomesofcataclysms.data.PersistentData;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.biome.Biome;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import java.util.Optional;
 
 @Mixin(Mob.class)
 public class DisableZombieSunBurnMixin {

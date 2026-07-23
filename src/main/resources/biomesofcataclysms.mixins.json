@@ -4,11 +4,26 @@
   "package": "net.calca.biomesofcataclysms.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "ClientLevelMixin",
-    "DisableZombieSunBurnMixin"
+    "LeavesRandomTickMixin",
+    "ModifyChunkTemperatureMixin",
+    "ServerLevelRandomTickMixin",
+    "SpreadingDirtRandomTickMixin",
+    "client.ClientLevelMixin",
+    "eternalEclipse.AbstractFurnaceBlockEntityMixin",
+    "eternalEclipse.CampfireBlockEntityMixin",
+    "eternalEclipse.DisableZombieSunBurnMixin",
+    "eternalEclipse.FireBlockMixin",
+    "eternalEclipse.IceRandomTickMixin",
+    "eternalEclipse.MushroomStemRandomTickBehaviorMixin",
+    "eternalEclipse.MushroomStemRandomTickStateMixin",
+    "eternalEclipse.VineRandomTickMixin",
+    "eternalEclipse.WaterRandomTickBehaviorMixin",
+    "eternalEclipse.WaterRandomTickStateMixin",
+    "eternalEclipse.mon.ClockItemPropertyMixin"
   ],
   "client": [
-    "ClientLevelDataAccessor"
+    "client.ClientLevelDataAccessor",
+    "eternalEclipse.mon.LevelRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

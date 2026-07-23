@@ -1,4 +1,6 @@
 
+1. Sinconizzare la luna seconda con il server time e non con il client time.
+2. Il tempo non deve persistere da un mondo all'altro (client data reset)
 
 3. Data recovery
 4. Eternal Darkness

@@ -5,6 +5,7 @@ package net.calca.biomesofcataclysms.data;
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
+import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
 import net.calca.biomesofcataclysms.management.chunk.ChunkProcessor;
 import net.minecraft.network.chat.Component;
@@ -42,6 +43,9 @@ public class DataSync {
             Map<Long, ChunkInstance> dimCopy = new HashMap<>(dimEntry.getValue());
             RuntimeData.CHUNKS.put(dimEntry.getKey(), dimCopy);
         }
+
+        RuntimeData.isEternalEclipseApocalypseActive = ModUtils.decodeCataclysmFromString(saved.cataclysm) == AllCataclysms.ETERNAL_ECLIPSE;
+
         saved.syncData(server, true, false);
     }
     public static ChunkProcessor.DimensionState copyState(ChunkProcessor.DimensionState src) {

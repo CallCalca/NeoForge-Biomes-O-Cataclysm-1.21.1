@@ -67,6 +67,8 @@ public class GameplayBranchCommands extends ModCommandsCommon {
         MutableComponent cataclysm = Component.literal(variables.cataclysm)
                 .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
 
+        variables.generateFullBiomeList(world);
+
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setCataclysmTo", cataclysm)
                 .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
         for (ServerPlayer serverPlayer : arguments.getSource().getServer().getPlayerList().getPlayers()) {
@@ -114,6 +116,8 @@ public class GameplayBranchCommands extends ModCommandsCommon {
         MutableComponent cataclysm = Component.literal(variables.cataclysm)
                 .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
 
+        variables.generateFullBiomeList(world);
+
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setCataclysmTo", cataclysm)
                 .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
         for (ServerPlayer serverPlayer : arguments.getSource().getServer().getPlayerList().getPlayers()) {
@@ -160,6 +164,8 @@ public class GameplayBranchCommands extends ModCommandsCommon {
         variables.syncData(world, true, false);
         MutableComponent cataclysm = Component.literal(variables.cataclysm)
                 .withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
+
+        variables.removeNetherEndBiomesFromPool(world);
 
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setCataclysmTo", cataclysm)
                 .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
