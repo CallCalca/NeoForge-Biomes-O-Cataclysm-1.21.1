@@ -139,5 +139,11 @@
 
   "//": "--- 进度条 ---",
   "progressBar.title.timerProgressBar": "剩余时间 | %s",
-  "progressBar.title.sunStormProgressBar": "太阳风暴 | 阶段 %s"
+  "progressBar.title.sunStormProgressBar": "太阳风暴 | 阶段 %s",
+
+  "warning.biomesofcataclysms.errorAboutToBeThrown": "检测到内部错误（%s）。正在尝试恢复...\n最大等待时间：%s 刻。",
+  "success.biomesofcataclysms.operationSuccess": "[操作成功 - %s]",
+  "debug.biomesofcataclysms.simpleDebug": "[调试 | %s | %s]",
+  "success.biomesofcataclysms.successInfos": "程序：%s。\n耗时：%s 刻。",
+  "success.biomesofcataclysms.errorSolved": "错误已在内部修复。"
 }

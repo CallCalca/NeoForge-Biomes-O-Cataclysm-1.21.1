@@ -139,5 +139,11 @@
 
   "//": "--- PROGRESS BAR ---",
   "progressBar.title.timerProgressBar": "Tempo rimanente | %s",
-  "progressBar.title.sunStormProgressBar": "Tempesta solare | Fase %s"
+  "progressBar.title.sunStormProgressBar": "Tempesta solare | Fase %s",
+
+  "warning.biomesofcataclysms.errorAboutToBeThrown": "Errore interno rilevato (%s). Tentativo di ripristino in corso... \nTempo d'attesa massimo: %s tick.",
+  "success.biomesofcataclysms.operationSuccess": "[Operazione riuscita - %s]",
+  "debug.biomesofcataclysms.simpleDebug": "[Debug | %s | %s]",
+  "success.biomesofcataclysms.successInfos": "Procedura: %s. \nTempo trascorso: %s tick.",
+  "success.biomesofcataclysms.errorSolved": "L'errore è stato risolto internamente."
 }

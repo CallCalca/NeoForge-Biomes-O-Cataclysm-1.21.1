@@ -139,5 +139,11 @@
 
   "//": "--- BARA DE PROGRESSO ---",
   "progressBar.title.timerProgressBar": "Tempo restante | %s",
-  "progressBar.title.sunStormProgressBar": "Tempesta solar | Fase %s"
+  "progressBar.title.sunStormProgressBar": "Tempesta solar | Fase %s",
+
+  "warning.biomesofcataclysms.errorAboutToBeThrown": "Erore interno catà (%s). Tentadivo de ripristino in corso... \nTempo masimo de atesa: %s tick.",
+  "success.biomesofcataclysms.operationSuccess": "[Operasion riusìa - %s]",
+  "debug.biomesofcataclysms.simpleDebug": "[Debug | %s | %s]",
+  "success.biomesofcataclysms.successInfos": "Procedura: %s. \nTempo pasà: %s tick.",
+  "success.biomesofcataclysms.errorSolved": "L'erore el xe sta risolto internamente."
 }

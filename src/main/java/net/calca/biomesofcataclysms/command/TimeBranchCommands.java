@@ -5,7 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.server.PersistentData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;

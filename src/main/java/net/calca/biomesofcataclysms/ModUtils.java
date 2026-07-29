@@ -1,10 +1,10 @@
 package net.calca.biomesofcataclysms;
 
-import net.calca.biomesofcataclysms.data.PersistentData;
-import net.calca.biomesofcataclysms.data.RuntimeData;
-import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
-import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
-import net.calca.biomesofcataclysms.data.chunk.ChunkState;
+import net.calca.biomesofcataclysms.data.server.PersistentData;
+import net.calca.biomesofcataclysms.data.server.RuntimeData;
+import net.calca.biomesofcataclysms.cataclysm.AllCataclysms;
+import net.calca.biomesofcataclysms.data.server.chunk.ChunkInstance;
+import net.calca.biomesofcataclysms.data.server.chunk.ChunkState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
@@ -27,8 +27,10 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
-import static net.calca.biomesofcataclysms.management.chunk.ChunkQueueManager.getOrCreateDimChunkMap;
+import static net.calca.biomesofcataclysms.management.server.chunk.ChunkQueueManager.getOrCreateDimChunkMap;
+
 
 public class ModUtils {
     public static boolean isPlayerInGame(ServerPlayer player) {
@@ -74,6 +76,10 @@ public class ModUtils {
         }else{
             return true;
         }
+    }
+
+    public static boolean isAGameAlreadyStarted(int tickToNextCataclysm, int tickDelayBetweenCataclysm, int biomesAffected){
+        return tickToNextCataclysm != tickDelayBetweenCataclysm || biomesAffected != 0;
     }
 
     public static MutableComponent buildErrorMessage(boolean fatalError, int errorNumber, Component errorPoint, MutableComponent errorDescription){

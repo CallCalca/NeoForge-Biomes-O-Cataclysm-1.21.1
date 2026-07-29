@@ -3,10 +3,10 @@ package net.calca.biomesofcataclysms.command;
 import com.mojang.brigadier.context.CommandContext;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.command.common.ModCommandsCommon;
-import net.calca.biomesofcataclysms.data.PersistentData;
-import net.calca.biomesofcataclysms.data.RuntimeData;
-import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
-import net.calca.biomesofcataclysms.data.chunk.ChunkInstance;
+import net.calca.biomesofcataclysms.data.server.PersistentData;
+import net.calca.biomesofcataclysms.data.server.RuntimeData;
+import net.calca.biomesofcataclysms.cataclysm.AllCataclysms;
+import net.calca.biomesofcataclysms.data.server.chunk.ChunkInstance;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static net.calca.biomesofcataclysms.ModUtils.decodeCataclysmFromEnum;
-import static net.calca.biomesofcataclysms.data.DataSync.copyState;
+import static net.calca.biomesofcataclysms.data.server.DataSync.copyState;
 
 @EventBusSubscriber
 public class SingleCommands extends ModCommandsCommon {

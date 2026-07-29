@@ -139,5 +139,11 @@
 
   "//": "--- FORTSCHRITTSLEISTE ---",
   "progressBar.title.timerProgressBar": "Verbleibende Zeit | %s",
-  "progressBar.title.sunStormProgressBar": "Sonnensturm | Phase %s"
+  "progressBar.title.sunStormProgressBar": "Sonnensturm | Phase %s",
+
+  "warning.biomesofcataclysms.errorAboutToBeThrown": "Interner Fehler erkannt (%s). Wiederherstellung wird versucht... \nMax. Wartezeit: %s Ticks.",
+  "success.biomesofcataclysms.operationSuccess": "[Vorgang erfolgreich - %s]",
+  "debug.biomesofcataclysms.simpleDebug": "[Debug | %s | %s]",
+  "success.biomesofcataclysms.successInfos": "Prozedur: %s. \nVerstrichene Zeit: %s Ticks.",
+  "success.biomesofcataclysms.errorSolved": "Der Fehler wurde intern behoben."
 }

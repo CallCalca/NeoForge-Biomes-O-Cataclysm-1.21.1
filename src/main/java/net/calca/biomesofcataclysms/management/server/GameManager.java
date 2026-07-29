@@ -3,7 +3,7 @@ package net.calca.biomesofcataclysms.management.server;
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.bar.ProgressBarManager;
-import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.server.PersistentData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;

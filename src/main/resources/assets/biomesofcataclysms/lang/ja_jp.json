@@ -139,5 +139,11 @@
 
   "//": "--- 進行バー ---",
   "progressBar.title.timerProgressBar": "残り時間 | %s",
-  "progressBar.title.sunStormProgressBar": "太陽嵐 | フェーズ %s"
+  "progressBar.title.sunStormProgressBar": "太陽嵐 | フェーズ %s",
+
+  "warning.biomesofcataclysms.errorAboutToBeThrown": "内部エラーが検出されました（%s）。復旧を試みています...\n最大待機時間: %s ティック。",
+  "success.biomesofcataclysms.operationSuccess": "[処理成功 - %s]",
+  "debug.biomesofcataclysms.simpleDebug": "[デバッグ | %s | %s]",
+  "success.biomesofcataclysms.successInfos": "手順: %s。\n経過時間: %s ティック。",
+  "success.biomesofcataclysms.errorSolved": "エラーは内部で解決されました。"
 }

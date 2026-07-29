@@ -140,6 +140,7 @@
   "//": "--- PROGRESS BAR ---",
   "progressBar.title.timerProgressBar": "Remaining Time | %s",
   "progressBar.title.sunStormProgressBar": "Sun Storm | Phase %s",
+
   "warning.biomesofcataclysms.errorAboutToBeThrown": "Internal error detected (%s). Attempting recovery... \nMax waiting time: %s ticks.",
   "success.biomesofcataclysms.operationSuccess": "[Operation Success - %s]",
   "debug.biomesofcataclysms.simpleDebug": "[Debug | %s | %s]",

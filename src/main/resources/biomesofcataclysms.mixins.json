@@ -4,26 +4,26 @@
   "package": "net.calca.biomesofcataclysms.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "LeavesRandomTickMixin",
-    "ModifyChunkTemperatureMixin",
-    "ServerLevelRandomTickMixin",
-    "SpreadingDirtRandomTickMixin",
+    "block.FireBlockMixin",
+    "block.IceRandomTickMixin",
+    "block.LeavesRandomTickMixin",
+    "block.MushroomStemRandomTickBehaviorMixin",
+    "block.SpreadingDirtRandomTickMixin",
+    "block.VineRandomTickMixin",
+    "block.WaterRandomTickBehaviorMixin",
+    "block.entity.AbstractFurnaceBlockEntityMixin",
+    "block.entity.CampfireBlockEntityMixin",
     "client.ClientLevelMixin",
-    "eternalEclipse.AbstractFurnaceBlockEntityMixin",
-    "eternalEclipse.CampfireBlockEntityMixin",
-    "eternalEclipse.DisableZombieSunBurnMixin",
-    "eternalEclipse.FireBlockMixin",
-    "eternalEclipse.IceRandomTickMixin",
-    "eternalEclipse.MushroomStemRandomTickBehaviorMixin",
-    "eternalEclipse.MushroomStemRandomTickStateMixin",
-    "eternalEclipse.VineRandomTickMixin",
-    "eternalEclipse.WaterRandomTickBehaviorMixin",
-    "eternalEclipse.WaterRandomTickStateMixin",
-    "eternalEclipse.mon.ClockItemPropertyMixin"
+    "client.ModifyChunkTemperatureMixin",
+    "enable.LeavesRandomTickStateMixin",
+    "enable.MushroomStemRandomTickStateMixin",
+    "enable.WaterRandomTickStateMixin",
+    "entity.DisableZombieSunBurnMixin",
+    "item.ClockItemPropertyMixin"
   ],
   "client": [
     "client.ClientLevelDataAccessor",
-    "eternalEclipse.mon.LevelRendererMixin"
+    "client.LevelRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

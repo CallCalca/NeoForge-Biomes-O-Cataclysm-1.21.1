@@ -1,9 +1,5 @@
 
-1. Sinconizzare la luna seconda con il server time e non con il client time.
-2. Il tempo non deve persistere da un mondo all'altro (client data reset)
-
 3. Data recovery
-4. Eternal Darkness
 
 1. Per Eternal Eclipse: devo fare che i chunk non entrano mai in nessuna lista: non c'è nulla da processare, quindi...
 
@@ -20,9 +16,3 @@ Futuro:
                     . Se vengono lasciati stare per un periodo abbastanza lungo (un po come il warked) si sepelliscono e si trasfromano in un cataluist
                         che diffonde tantissimo sculk intorno a diversi chunk dal Catalyst. Può spawnare il warden ).
 6. Mostra una barra del boss sopra la testa se ci si trova in un bioma colpito, mostrando quanto manca ai vari stage
-
-X. La modalità ETERNAL ECLIPSE, invece di creare solo notte eterna e spawn continuo dei mob, potrebbe comprendere diversi stadi: un po come flooded
-    dal punto piu alto del mondo comincia ada abbassarsi la temperatura dei blocchi, andando a trasformare i blocchi di consequence (acqua -> ghiaccio,
-    lava -> magma...). Inoltre la vegetazione comincia velocemente a deperire, lasciando spazio a micelio e fungi, che non hanno bisogno di luce
-    per vivere (a anche a liane delle bacche luminose). Nello step finale tutto muore e tutto risulta completamente congelato e innevato.
-    lentamente il freddo si muove verso il basso, raggiungendo tutti i punti della crosta terrestre.

@@ -3,9 +3,9 @@ package net.calca.biomesofcataclysms.command.common;
 
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
-import net.calca.biomesofcataclysms.data.PersistentData;
-import net.calca.biomesofcataclysms.data.RuntimeData;
-import net.calca.biomesofcataclysms.data.cataclysm.AllCataclysms;
+import net.calca.biomesofcataclysms.data.server.PersistentData;
+import net.calca.biomesofcataclysms.data.server.RuntimeData;
+import net.calca.biomesofcataclysms.cataclysm.AllCataclysms;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;

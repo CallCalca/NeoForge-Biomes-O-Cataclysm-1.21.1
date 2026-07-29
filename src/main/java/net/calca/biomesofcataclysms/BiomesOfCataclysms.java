@@ -1,6 +1,6 @@
 package net.calca.biomesofcataclysms;
 
-import net.calca.biomesofcataclysms.data.PersistentData;
+import net.calca.biomesofcataclysms.data.server.PersistentData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -18,10 +18,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
