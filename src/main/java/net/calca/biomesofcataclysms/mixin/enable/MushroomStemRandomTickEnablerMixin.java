@@ -13,15 +13,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BlockBehaviour.BlockStateBase.class)
-public abstract class MushroomStemRandomTickStateMixin {
+public abstract class MushroomStemRandomTickEnablerMixin {
     @Shadow
     public abstract Block getBlock();
 
     @Inject(method = "isRandomlyTicking", at = @At("HEAD"), cancellable = true)
     private void boc$forceMushroomStemTick(CallbackInfoReturnable<Boolean> cir) {
         // Se il blocco in questione è il gambo del fungo, costringiamo il gioco a farlo ticcare
-        if (this.getBlock() == Blocks.MUSHROOM_STEM
-                && ModUtils.decodeCataclysmFromString(ClientDataAccessPoint.clientData.mapData.cataclysm) == AllCataclysms.ETERNAL_ECLIPSE) {
+        if (this.getBlock() == Blocks.MUSHROOM_STEM) {
             cir.setReturnValue(true);
         }
     }
