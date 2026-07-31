@@ -73,7 +73,9 @@ public class TimeBranchCommands extends ModCommandsCommon {
         int biomePerMinutesMinutes = (int) biomePerMinutes;
         int biomePerMinutesSeconds = (int) Math.round((biomePerMinutes - biomePerMinutesMinutes) * 60);
 
-        variables.tickDelayBetweenCataclysm = (biomePerMinutesMinutes * 60 * 20) + (biomePerMinutesSeconds * 20);
+        // Convertiamo timer in double per non perdere i decimali nella divisione,
+        // poi arrotondiamo al tick più vicino e lo riconvertiamo in int.
+        variables.tickDelayBetweenCataclysm = (int) Math.round((double) variables.timer / variables.totalBiomes);
         variables.tickToNextCataclysm = variables.tickDelayBetweenCataclysm;
         variables.syncData(world, true, false);
         if (biomePerMinutes % 1 != 0) {

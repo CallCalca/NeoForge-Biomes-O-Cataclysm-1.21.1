@@ -44,7 +44,6 @@ public class DataSync {
             RuntimeData.CHUNKS.put(dimEntry.getKey(), dimCopy);
         }
 
-        RuntimeData.isEternalEclipseApocalypseActive = ModUtils.decodeCataclysmFromString(saved.cataclysm) == AllCataclysms.ETERNAL_ECLIPSE;
 
         saved.syncData(server, true, false);
     }

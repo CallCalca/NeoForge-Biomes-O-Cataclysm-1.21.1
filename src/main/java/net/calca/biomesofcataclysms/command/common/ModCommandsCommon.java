@@ -258,7 +258,6 @@ public class ModCommandsCommon {
 
         if (random == AllCataclysms.ETERNAL_ECLIPSE) {
             variables.removeNetherEndBiomesFromPool(level);
-            RuntimeData.isEternalEclipseApocalypseActive = true;
         }
 
 
@@ -274,89 +273,4 @@ public class ModCommandsCommon {
 
     }
 
-
-
-    public static class DataRecovery{
-        public static PersistentData.MapVariables variables;
-        public static ServerLevel serverLevel;
-
-        public DataRecovery(PersistentData.MapVariables variables, ServerLevel serverLevel){
-            DataRecovery.variables = variables;
-            DataRecovery.serverLevel = serverLevel;
-        }
-
-        protected static void analyzeCode(){
-            MutableComponent infoMsg = ModUtils.buildWarningMessage(false, Component.literal("DataRecovery.analyzeCode"), Component.literal(""));
-            ModUtils.sendChatMessage(serverLevel, infoMsg);
-
-            if (variables.shuffledBiomes.isEmpty()){
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildErrorMessage(true, 5,  Component.literal("shuffledBiomes[R]"),
-                        Component.translatable("error.biomesofcataclysms.error5")));
-                variables.dataCondition = 1;
-                return;
-            }
-
-            if (variables.mode == 0){
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(false, Component.literal("mode"),
-                        Component.translatable("warning.biomesofcataclysms.mode0")));
-                variables.dataCondition = 1;
-            } else if (variables.mode == 1) {
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(false, Component.literal("mode"),
-                        Component.translatable("warning.biomesofcataclysms.mode1")));
-                variables.dataCondition = 1;
-            }else{
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildErrorMessage(true, 6,  Component.literal("mode"),
-                        Component.translatable("error.biomesofcataclysms.error6")));
-                variables.dataCondition = 1;
-                return;
-            }
-
-            if (variables.deletedBiomes.isEmpty()) {
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(true, Component.literal("deletedBiomes"),
-                        Component.translatable("warning.biomesofcataclysms.deletedBiomes")));
-                variables.dataCondition = 1;
-            }
-
-            if (variables.state == 2){
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(false, Component.literal("state"),
-                        Component.translatable("warning.biomesofcataclysms.state")));
-                variables.dataCondition = 1;
-            } else if (variables.state == 0) {
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(true, Component.literal("state"),
-                        Component.translatable("warning.biomesofcataclysms.stateCritical")));
-                variables.dataCondition = 1;
-            }
-
-
-            //To finish
-
-        }
-
-        protected static void attemptDataRecovery(){
-            if (variables.state != 1){
-                variables.state = 1;
-            }
-            if (variables.shuffledBiomes.isEmpty()){
-                variables.generateFullBiomeList(serverLevel);
-                variables.shuffledBiomes.removeIf(variables.deletedBiomes::contains);
-                variables.syncData(serverLevel, true, false);
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(false, Component.literal("attemptDataRecovery"),
-                        Component.translatable("warning.biomesofcataclysms.shuffledBiomesRecovered", variables.shuffledBiomes, variables.deletedBiomes)));
-            }
-
-            if (variables.mode == 0){
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(false, Component.literal("attemptDataRecovery"),
-                        Component.translatable("warning.biomesofcataclysms.mode0")));
-            } else if (variables.mode == 1) {
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(false, Component.literal("attemptDataRecovery"),
-                        Component.translatable("warning.biomesofcataclysms.mode1")));
-            }else{
-                ModUtils.sendChatMessage(serverLevel, ModUtils.buildWarningMessage(true, Component.literal("attemptDataRecovery"),
-                        Component.translatable("warning.biomesofcataclysms.modeOuOfBound")));
-            }
-
-            //To finish
-        }
-
-    }
 }

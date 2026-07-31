@@ -197,8 +197,6 @@ public class SingleCommands extends ModCommandsCommon {
             saved.chunks.put(dimEntry.getKey(), dimCopy);
         }
 
-        RuntimeData.isEternalEclipseApocalypseActive = false;
-
         saved.setDirty(); // solo salvataggio su disco
     }
 
