@@ -77,6 +77,7 @@ public class LivingEntityEvents {
     public static void onWolfAttack(LivingDamageEvent.Post event) {
         // Lavoriamo solo sul lato Server
         if (event.getEntity().level().isClientSide()) return;
+        if (!ModUtils.isGameRunningWithCataclysm(event.getEntity().level(), AllCataclysms.ETERNAL_ECLIPSE)) return;
 
         // 1. Verifichiamo se l'aggressore (TrueSource) è un Lupo
         if (event.getSource().getEntity() instanceof Wolf wolf) {
@@ -88,7 +89,7 @@ public class LivingEntityEvents {
                 float damageDealt = event.getOriginalDamage();
 
                 // 4. Calcoliamo il 30% del danno (0.3F)
-                float healAmount = damageDealt * 0.30F;
+                float healAmount = damageDealt * 0.45F;
 
                 if (healAmount > 0) {
                     wolf.heal(healAmount);
@@ -129,11 +130,11 @@ public class LivingEntityEvents {
         if (entity.tickCount % 20 != 0) return;
 
         ServerLevel level = (ServerLevel) entity.level();
-        BlockPos pos = entity.blockPosition();
         PersistentData.MapVariables globalVars = PersistentData.MapVariables.get(level);
 
         if (!ModUtils.isGameRunningWithCataclysm(level, AllCataclysms.ETERNAL_ECLIPSE)) return;
 
+        BlockPos pos = entity.blockPosition();
         String biomeId = ModUtils.getBiomeID(level, pos);
 
         if (!globalVars.deletedBiomes.contains(biomeId)) return;
