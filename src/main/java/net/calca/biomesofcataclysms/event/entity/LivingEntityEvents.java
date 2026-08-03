@@ -78,6 +78,8 @@ public class LivingEntityEvents {
         // Lavoriamo solo sul lato Server
         if (event.getEntity().level().isClientSide()) return;
         if (!ModUtils.isGameRunningWithCataclysm(event.getEntity().level(), AllCataclysms.ETERNAL_ECLIPSE)) return;
+        if (!EternalEclipseStage.isBloodMoonEventActiveOnBiome((ServerLevel) event.getEntity().level(),
+                ModUtils.getBiomeID(event.getEntity().level(), event.getEntity().getOnPos()))) return;
 
         // 1. Verifichiamo se l'aggressore (TrueSource) è un Lupo
         if (event.getSource().getEntity() instanceof Wolf wolf) {
