@@ -166,22 +166,6 @@ public class ModCommandsCommon {
             return false;
         }
     }
-    protected static void dataRecoveryCommand(Player player) {
-        MutableComponent warning = Component.literal(" [!] ")
-                .withStyle(ChatFormatting.RED);
-        MutableComponent resume = Component.translatable("event.biomesofcataclysms.resume")
-                .withStyle(style -> style
-                        .withUnderlined(false)
-                        .withClickEvent(new ClickEvent(
-                                ClickEvent.Action.RUN_COMMAND,
-                                "/biomesOfCataclysms startOrResume"
-                        ))
-                        .withColor(ChatFormatting.LIGHT_PURPLE)
-                        .withBold(true)
-                );
-        player.sendSystemMessage(warning.append(resume));
-
-    }
 
     protected static void setDifficultyMsg(int difficulty, MinecraftServer server, ServerLevel serverLevel){
         ModUtils.sendChatMessage(serverLevel, Component.translatable("command.biomesofcataclysms.setDifficulty" + "." + difficulty)
