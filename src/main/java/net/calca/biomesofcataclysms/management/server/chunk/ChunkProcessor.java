@@ -1,5 +1,6 @@
 package net.calca.biomesofcataclysms.management.server.chunk;
 
+import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.cataclysm.sunburn.SunBurnStage;
@@ -253,8 +254,12 @@ public class ChunkProcessor {
                             continue;
                         }
 
-                        // Se è un portale o un frame, saltiamo completamente il blocco
-                        if (state.is(Blocks.END_PORTAL) || state.is(Blocks.END_PORTAL_FRAME)) {
+                        // Blocchi proibiti
+                        if (state.is(Blocks.END_PORTAL) || state.is(Blocks.END_PORTAL_FRAME) || state.is(Blocks.NETHER_BRICKS)) {
+                            continue;
+                        }
+                        //Gli spawner si saltano solo se posto sopra a del nether bricks (quindi spawner di blase)
+                        if (state.is(Blocks.SPAWNER) && level.getBlockState(mutablePos.below()).is(Blocks.NETHER_BRICKS)){
                             continue;
                         }
 

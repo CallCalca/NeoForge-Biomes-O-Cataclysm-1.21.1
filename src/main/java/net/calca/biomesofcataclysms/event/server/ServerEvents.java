@@ -30,8 +30,11 @@ import net.minecraft.world.BossEvent;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Skeleton;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -43,6 +46,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.MobSpawnEvent;
+import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -670,11 +674,43 @@ public class ServerEvents {
             }
         }
 
+
+    @SubscribeEvent
+    private static void onBlockDrops(BlockDropsEvent event) {
+        //Quando viene rotto un blocco di NETHER BRICKS, dropperà un blocco di CRACKED NETHER BRICKS, così da evitare che il giocatore
+        //si porti dietro un blocco proibito.
+        if (!event.getLevel().isClientSide() && event.getState().is(Blocks.NETHER_BRICKS)) {
+
+            // Pulisce i drop originali (rimuove il blocco standard di Nether Bricks)
+            event.getDrops().clear();
+
+            // Crea il nuovo ItemStack dei Cracked Nether Bricks
+            ItemStack crackedBricks = new ItemStack(Items.CRACKED_NETHER_BRICKS);
+
+            // Aggiunge l'ItemEntity alla lista dei drop dell'evento
+            ItemEntity itemEntity = new net.minecraft.world.entity.item.ItemEntity(
+                    event.getLevel(),
+                    event.getPos().getX() + 0.5,
+                    event.getPos().getY() + 0.5,
+                    event.getPos().getZ() + 0.5,
+                    crackedBricks
+            );
+
+            // 3. Imposta il ritardo di raccolta (es. 40 tick = 2 secondi, identico a quando un player lancia un oggetto)
+            itemEntity.setPickUpDelay(10);
+
+            event.getDrops().add(itemEntity);
+        }
+    }
+
+
     //Used only in debug mode
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.getLevel() instanceof ServerLevel level) {
             PersistentData.MapVariables vars = PersistentData.MapVariables.get(level);
+
+            //Debug mode
             if (!vars.debugMode) return;
             if (event.getState().is(Blocks.STONE)) {
                     String target = Biomes.FOREST.location().toString();
