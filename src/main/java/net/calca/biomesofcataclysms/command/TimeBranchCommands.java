@@ -12,6 +12,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -48,12 +49,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
                     Component.translatable("command.biomesofcataclysms.cannotSetTimer", minutesString,
                                     minimumMinuteString)
                             .withStyle(ChatFormatting.YELLOW)); //Starting
-            Objects.requireNonNull(arguments.getSource().getPlayer()).playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(arguments.getSource().getPlayer(), 0.4F);
 
             return 0;
         }
@@ -101,12 +97,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setTimer", minutesString,
                         stringOf1, biomePerMinuteString)
                 .withStyle(ChatFormatting.GREEN));
-        Objects.requireNonNull(arguments.getSource().getPlayer()).playNotifySound(
-                SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                SoundSource.MASTER,                 // categoria audio
-                1F,                               // volume
-                0.9F                                // pitch
-        );
+        ModUtils.playGlobalNoteBlockSound(0.9F);
         ProgressBarManager.TimerProgressBar.initialize(variables, world);
 
         return 0;
@@ -132,12 +123,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
 
             ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.timerRemoved")
                     .withStyle(ChatFormatting.GREEN));
-            Objects.requireNonNull(arguments.getSource().getPlayer()).playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.9F                                // pitch
-            );
+            ModUtils.playGlobalNoteBlockSound(0.9F);
             variables.syncData(world, true, false);
 
             ProgressBarManager.TimerProgressBar.TIMER_PROGRESS_BAR.removeForAllPlayers();
@@ -165,12 +151,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
                     Component.translatable("command.biomesofcataclysms.cannotSetDelay", minutesString,
                                     minimumMinuteString)
                             .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD)); //Starting
-            Objects.requireNonNull(arguments.getSource().getPlayer()).playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(arguments.getSource().getPlayer(), 0.4F);
 
             return 0;
         }
@@ -185,12 +166,7 @@ public class TimeBranchCommands extends ModCommandsCommon {
 
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setDelayBetweenCataclysms",
                 minutesString).withStyle(ChatFormatting.BOLD, ChatFormatting.GREEN)); //Starting
-        Objects.requireNonNull(arguments.getSource().getPlayer()).playNotifySound(
-                SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                SoundSource.MASTER,                 // categoria audio
-                1F,                               // volume
-                0.9F                                // pitch
-        );
+        ModUtils.playGlobalNoteBlockSound(0.9F);
 
         return 0;
     }

@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.BossEvent;
@@ -113,61 +114,21 @@ public class GameManager {
     }
 
     private static void playSound(Player player){
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
+        ModUtils.playLocalBellResonateSound(serverPlayer, 1F);
+        ModUtils.playLocalBellResonateSound(serverPlayer, 0.9F);
+        ModUtils.playLocalBellResonateSound(serverPlayer, 0.8F);
+        ModUtils.playLocalBellResonateSound(serverPlayer, 0.7F);
 
-        player.playNotifySound(
-                SoundEvents.BELL_RESONATE,
-                SoundSource.PLAYERS,
-                1F,
-                1F
-        );
-        player.playNotifySound(
-                SoundEvents.BELL_RESONATE,
-                SoundSource.PLAYERS,
-                0.8F,
-                0.9F
-        );
-        player.playNotifySound(
-                SoundEvents.BELL_RESONATE,
-                SoundSource.PLAYERS,
-                0.6F,
-                0.8F
-        );
-        player.playNotifySound(
-                SoundEvents.BELL_RESONATE,
-                SoundSource.PLAYERS,
-                0.4F,
-                0.7F
-        );
-
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = serverPlayer.getServer();
         assert server != null;
 
         BiomesOfCataclysms.queueServerWork(10, () -> {
             server.execute(() -> {
-                player.playNotifySound(
-                        SoundEvents.BELL_RESONATE,
-                        SoundSource.PLAYERS,
-                        1F,
-                        0.6F
-                );
-                player.playNotifySound(
-                        SoundEvents.BELL_RESONATE,
-                        SoundSource.PLAYERS,
-                        0.8F,
-                        0.5F
-                );
-                player.playNotifySound(
-                        SoundEvents.BELL_RESONATE,
-                        SoundSource.PLAYERS,
-                        0.6F,
-                        0.4F
-                );
-                player.playNotifySound(
-                        SoundEvents.BELL_RESONATE,
-                        SoundSource.PLAYERS,
-                        0.4F,
-                        0.3F
-                );
+                ModUtils.playLocalBellResonateSound(serverPlayer, 0.6F);
+                ModUtils.playLocalBellResonateSound(serverPlayer, 0.5F);
+                ModUtils.playLocalBellResonateSound(serverPlayer, 0.4F);
+                ModUtils.playLocalBellResonateSound(serverPlayer, 0.3F);
             });
         });
     }

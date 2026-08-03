@@ -30,34 +30,19 @@ public class GameplayBranchCommands extends ModCommandsCommon {
         if (variables.mode != 1){
             ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.modeMustBeSetToApocalypse")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.4F);
             return 0;
         }
         if (variables.state < 2){
             ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.aGameMustBeRunning")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.4F);
             return 0;
         } //Check
         if (!variables.deletedBiomes.isEmpty()){
             ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.cannotChangeCataclusm")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.4F);
             return 0;
 
         } //Check
@@ -71,14 +56,7 @@ public class GameplayBranchCommands extends ModCommandsCommon {
 
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setCataclysmTo", cataclysm)
                 .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
-        for (ServerPlayer serverPlayer : arguments.getSource().getServer().getPlayerList().getPlayers()) {
-            serverPlayer.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.9F                                // pitch
-            );
-        }
+        ModUtils.playGlobalNoteBlockSound(0.9F);
 
         return 0;
     }
@@ -90,23 +68,13 @@ public class GameplayBranchCommands extends ModCommandsCommon {
         if (variables.state < 2){
             ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.aGameMustBeRunning")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.4F);
             return 0;
         } //Check
         if (!variables.deletedBiomes.isEmpty()){
             ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.cannotChangeCataclusm")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.4F);
             return 0;
 
         } //Check
@@ -120,14 +88,7 @@ public class GameplayBranchCommands extends ModCommandsCommon {
 
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setCataclysmTo", cataclysm)
                 .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
-        for (ServerPlayer serverPlayer : arguments.getSource().getServer().getPlayerList().getPlayers()) {
-            serverPlayer.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.9F                                // pitch
-            );
-        }
+        ModUtils.playGlobalNoteBlockSound(0.9F);
 
         return 0;
     }
@@ -139,23 +100,13 @@ public class GameplayBranchCommands extends ModCommandsCommon {
         if (variables.state < 2){
             ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.aGameMustBeRunning")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.4F);
             return 0;
         } //Check
         if (!variables.deletedBiomes.isEmpty()){
             ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.cannotChangeCataclusm")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.4F);
             return 0;
 
         } //Check
@@ -169,14 +120,7 @@ public class GameplayBranchCommands extends ModCommandsCommon {
 
         ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.setCataclysmTo", cataclysm)
                 .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
-        for (ServerPlayer serverPlayer : arguments.getSource().getServer().getPlayerList().getPlayers()) {
-            serverPlayer.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.9F                                // pitch
-            );
-        }
+        ModUtils.playGlobalNoteBlockSound(0.9F);
 
         return 0;
     }

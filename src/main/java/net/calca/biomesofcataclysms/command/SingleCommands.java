@@ -44,14 +44,7 @@ public class SingleCommands extends ModCommandsCommon {
             if (variables.state == 0){
                 variables.state = 1;
                 gameAboutToStartSettingsMessage(world, serverPlayer, variables);
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    player.playNotifySound(
-                            SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                            SoundSource.MASTER,                 // categoria audio
-                            1F,                               // volume
-                            0.8F                                // pitch
-                    );
-                }
+                ModUtils.playGlobalNoteBlockSound(0.8F);
             } else if (variables.state == 1) {
                 variables.state = 2;
                 ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.start")
@@ -67,37 +60,18 @@ public class SingleCommands extends ModCommandsCommon {
                     settingUpApocalypseMode(variables, world);
                 }
                 settingUpPcPowerComponents(variables, world, server);
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    player.playNotifySound(
-                            SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                            SoundSource.MASTER,                 // categoria audio
-                            1F,                               // volume
-                            1.2F                                // pitch
-                    );
-                }
+                ModUtils.playGlobalNoteBlockSound(1.2F);
             }
         }else if (variables.state == 1){
             variables.state = 2;
             ModUtils.sendChatMessage(world, Component.translatable("command.biomesofcataclysms.resume")
                     .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Resuming
             settingUpPcPowerComponents(variables, world, server);
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                player.playNotifySound(
-                        SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                        SoundSource.MASTER,                 // categoria audio
-                        1F,                               // volume
-                        1.2F                                // pitch
-                );
-            }
+            ModUtils.playGlobalNoteBlockSound(1.2F);
         } else if (variables.state == 2) {
             ModUtils.sendLocalChatMessageTo(serverPlayer, Component.translatable("command.biomesofcataclysms.gameAlreadyStarted")
                     .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-            arguments.getSource().getPlayer().playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(arguments.getSource().getPlayer(), 0.4F);
         }else{
             ModUtils.sendLocalChatMessageTo(serverPlayer,
                     ModUtils.buildErrorMessage(
@@ -122,14 +96,7 @@ public class SingleCommands extends ModCommandsCommon {
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
 
             MinecraftServer server = arguments.getSource().getServer();
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                player.playNotifySound(
-                        SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                        SoundSource.MASTER,                 // categoria audio
-                        1F,                               // volume
-                        0.6F                                // pitch
-                );
-            }
+            ModUtils.playGlobalNoteBlockSound(0.6F);
 
             for (ServerLevel serverLevel : server.getAllLevels()) {
                 loadRuntimeToPersistent(serverLevel);
@@ -146,12 +113,7 @@ public class SingleCommands extends ModCommandsCommon {
             assert player != null;
             ModUtils.sendLocalChatMessageTo(player, Component.translatable("command.biomesofcataclysms.alreadyPaused")
                     .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.4F);
         }
         return 0;
     }
@@ -166,12 +128,7 @@ public class SingleCommands extends ModCommandsCommon {
         if (variables.state != 0 && variables.state != 1) {
             ModUtils.executeCommandAsEntity(player, "biomesOfCataclysms " + COMMAND_1);
         }else{
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.6F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(player, 0.6F);
         }
 
         return 0;

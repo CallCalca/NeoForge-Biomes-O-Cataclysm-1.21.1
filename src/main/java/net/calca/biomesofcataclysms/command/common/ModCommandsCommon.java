@@ -4,7 +4,6 @@ package net.calca.biomesofcataclysms.command.common;
 import net.calca.biomesofcataclysms.BiomesOfCataclysms;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.data.server.PersistentData;
-import net.calca.biomesofcataclysms.data.server.RuntimeData;
 import net.calca.biomesofcataclysms.cataclysm.AllCataclysms;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -18,6 +17,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.LevelAccessor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import static net.calca.biomesofcataclysms.ModUtils.decodeCataclysmFromEnum;
 
@@ -145,12 +145,7 @@ public class ModCommandsCommon {
             MutableComponent msg = Component.translatable("command.biomesofcataclysms.cannotChangeSettingsWhileInGame")
                     .withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD);
             ModUtils.sendLocalChatMessageTo(player, msg);
-                player.playNotifySound(
-                        SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                        SoundSource.MASTER,                 // categoria audio
-                        1F,                               // volume
-                        0.4F                                // pitch
-                );
+            ModUtils.playLocalNoteBlockSound((ServerPlayer) player, 0.4F);
             return false;
         } else if ((variables.state == 0 || variables.state == 1) && !ModUtils.isAGameAlreadyStarted(variables)) {
             return true;
@@ -186,26 +181,12 @@ public class ModCommandsCommon {
     protected static void setDifficultyMsg(int difficulty, MinecraftServer server, ServerLevel serverLevel){
         ModUtils.sendChatMessage(serverLevel, Component.translatable("command.biomesofcataclysms.setDifficulty" + "." + difficulty)
                 .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.9F                                // pitch
-            );
-        }
+        ModUtils.playGlobalNoteBlockSound(0.9F);
     }
     protected static void setPcPowerMsg(int pcPower, MinecraftServer server, ServerLevel serverLevel){
         ModUtils.sendChatMessage(serverLevel, Component.translatable("command.biomesofcataclysms.setPcPower." + pcPower)
                 .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            player.playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.9F                                // pitch
-            );
-        }
+        ModUtils.playGlobalNoteBlockSound(0.9F);
     }
 
     protected static void settingUpPcPowerComponents(PersistentData.MapVariables variables, ServerLevel world, MinecraftServer server){

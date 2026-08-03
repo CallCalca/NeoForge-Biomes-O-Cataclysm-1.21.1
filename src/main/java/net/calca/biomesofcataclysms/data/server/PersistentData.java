@@ -8,17 +8,20 @@ import net.calca.biomesofcataclysms.data.server.chunk.ChunkInstance;
 import net.calca.biomesofcataclysms.data.server.chunk.ChunkState;
 import net.calca.biomesofcataclysms.management.server.chunk.ChunkProcessor;
 import net.calca.biomesofcataclysms.management.server.chunk.ChunkQueueManager;
+import net.minecraft.client.multiplayer.chat.LoggedChatMessage;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -64,6 +67,12 @@ public class PersistentData {
         BiomesOfCataclysms.addNetworkMessage(RequestBloodMoonEventsSyncMessage.TYPE, RequestBloodMoonEventsSyncMessage.STREAM_CODEC, RequestBloodMoonEventsSyncMessage::handleData);
         BiomesOfCataclysms.addNetworkMessage(RealServerTimeSyncMessage.TYPE, RealServerTimeSyncMessage.STREAM_CODEC, RealServerTimeSyncMessage::handleData);
         BiomesOfCataclysms.addNetworkMessage(RequestRealServerTimeMessage.TYPE, RequestRealServerTimeMessage.STREAM_CODEC, RequestRealServerTimeMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(NoteBlockSoundMessage.TYPE, NoteBlockSoundMessage.STREAM_CODEC, NoteBlockSoundMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(WitherSpawnSoundMessage.TYPE, WitherSpawnSoundMessage.STREAM_CODEC, WitherSpawnSoundMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(BellResonateSoundMessage.TYPE, BellResonateSoundMessage.STREAM_CODEC, BellResonateSoundMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(WitherDeathSoundMessage.TYPE, WitherDeathSoundMessage.STREAM_CODEC, WitherDeathSoundMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(BeaconDeactivateSoundMessage.TYPE, BeaconDeactivateSoundMessage.STREAM_CODEC, BeaconDeactivateSoundMessage::handleData);
+        BiomesOfCataclysms.addNetworkMessage(ComparatorClickSoundMessage.TYPE, ComparatorClickSoundMessage.STREAM_CODEC, ComparatorClickSoundMessage::handleData);
     }
 
     @EventBusSubscriber
@@ -1014,6 +1023,192 @@ public class PersistentData {
                 clientData.skyData.secondLunarPhase = message.vanillaMoonPhase;
             }).exceptionally(e -> {
                 context.connection().disconnect(Component.literal(e.getMessage()));
+                return null;
+            });
+        }
+    }
+
+    public record NoteBlockSoundMessage(float noteBlockSound) implements CustomPacketPayload {
+        // Identificatore univoco del pacchetto
+        public static final Type<NoteBlockSoundMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(BiomesOfCataclysms.MODID, "update_noteblock_sound"));
+
+        // StreamCodec ottimizzato usando ByteBufCodecs offerti da NeoForge/Minecraft
+        public static final StreamCodec<RegistryFriendlyByteBuf, NoteBlockSoundMessage> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.FLOAT, NoteBlockSoundMessage::noteBlockSound,
+                NoteBlockSoundMessage::new
+        );
+
+        @Override
+        public Type<NoteBlockSoundMessage> type() {
+            return TYPE;
+        }
+
+        // Gestione della ricezione del pacchetto sul Client
+        public static void handleData(final NoteBlockSoundMessage message, final IPayloadContext context) {
+            // Ci assicuriamo che il pacchetto venga processato solo lato Client
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                // Settiamo la variabile sul client con l'int ricevuto
+                ClientDataAccessPoint.clientData.soundData.noteBlockSound = message.noteBlockSound();
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal("Errore durante la sincronizzazione audio: " + e.getMessage()));
+                return null;
+            });
+        }
+    }
+    public record WitherSpawnSoundMessage(float witherSpawnSound) implements CustomPacketPayload {
+
+        // Identificatore univoco del pacchetto
+        public static final Type<WitherSpawnSoundMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(BiomesOfCataclysms.MODID, "update_witherspawn_sound"));
+
+        // StreamCodec ottimizzato usando ByteBufCodecs offerti da NeoForge/Minecraft
+        public static final StreamCodec<RegistryFriendlyByteBuf, WitherSpawnSoundMessage> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.FLOAT, WitherSpawnSoundMessage::witherSpawnSound,
+                WitherSpawnSoundMessage::new
+        );
+
+        @Override
+        public Type<WitherSpawnSoundMessage> type() {
+            return TYPE;
+        }
+
+        // Gestione della ricezione del pacchetto sul Client
+        public static void handleData(final WitherSpawnSoundMessage message, final IPayloadContext context) {
+            // Ci assicuriamo che il pacchetto venga processato solo lato Client
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                // Settiamo la variabile sul client con l'int ricevuto
+                clientData.soundData.witherSpawnSound = message.witherSpawnSound();
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal("Errore durante la sincronizzazione audio: " + e.getMessage()));
+                return null;
+            });
+        }
+    }
+    public record WitherDeathSoundMessage(float witherDeathSound) implements CustomPacketPayload {
+
+        // Identificatore univoco del pacchetto
+        public static final Type<WitherDeathSoundMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(BiomesOfCataclysms.MODID, "update_witherdeath_sound"));
+
+        // StreamCodec ottimizzato usando ByteBufCodecs offerti da NeoForge/Minecraft
+        public static final StreamCodec<RegistryFriendlyByteBuf, WitherDeathSoundMessage> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.FLOAT, WitherDeathSoundMessage::witherDeathSound,
+                WitherDeathSoundMessage::new
+        );
+
+        @Override
+        public Type<WitherDeathSoundMessage> type() {
+            return TYPE;
+        }
+
+        // Gestione della ricezione del pacchetto sul Client
+        public static void handleData(final WitherDeathSoundMessage message, final IPayloadContext context) {
+            // Ci assicuriamo che il pacchetto venga processato solo lato Client
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                // Settiamo la variabile sul client con l'int ricevuto
+                clientData.soundData.witherDeathSound = message.witherDeathSound();
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal("Errore durante la sincronizzazione audio: " + e.getMessage()));
+                return null;
+            });
+        }
+    }
+    public record BellResonateSoundMessage(float bellResonateSound) implements CustomPacketPayload {
+
+        // Identificatore univoco del pacchetto
+        public static final Type<BellResonateSoundMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(BiomesOfCataclysms.MODID, "update_bellresonate_sound"));
+
+        // StreamCodec ottimizzato usando ByteBufCodecs offerti da NeoForge/Minecraft
+        public static final StreamCodec<RegistryFriendlyByteBuf, BellResonateSoundMessage> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.FLOAT, BellResonateSoundMessage::bellResonateSound,
+                BellResonateSoundMessage::new
+        );
+
+        @Override
+        public Type<BellResonateSoundMessage> type() {
+            return TYPE;
+        }
+
+        // Gestione della ricezione del pacchetto sul Client
+        public static void handleData(final BellResonateSoundMessage message, final IPayloadContext context) {
+            // Ci assicuriamo che il pacchetto venga processato solo lato Client
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                // Settiamo la variabile sul client con l'int ricevuto
+                clientData.soundData.bellResonateSound = message.bellResonateSound();
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal("Errore durante la sincronizzazione audio: " + e.getMessage()));
+                return null;
+            });
+        }
+    }
+    public record BeaconDeactivateSoundMessage(float beaconDeactivateSound) implements CustomPacketPayload {
+
+        // Identificatore univoco del pacchetto
+        public static final Type<BeaconDeactivateSoundMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(BiomesOfCataclysms.MODID, "update_beacondeactivate_sound"));
+
+        // StreamCodec ottimizzato usando ByteBufCodecs offerti da NeoForge/Minecraft
+        public static final StreamCodec<RegistryFriendlyByteBuf, BeaconDeactivateSoundMessage> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.FLOAT, BeaconDeactivateSoundMessage::beaconDeactivateSound,
+                BeaconDeactivateSoundMessage::new
+        );
+
+        @Override
+        public Type<BeaconDeactivateSoundMessage> type() {
+            return TYPE;
+        }
+
+        // Gestione della ricezione del pacchetto sul Client
+        public static void handleData(final BeaconDeactivateSoundMessage message, final IPayloadContext context) {
+            // Ci assicuriamo che il pacchetto venga processato solo lato Client
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                // Settiamo la variabile sul client con l'int ricevuto
+                clientData.soundData.beaconDeactivateSound = message.beaconDeactivateSound();
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal("Errore durante la sincronizzazione audio: " + e.getMessage()));
+                return null;
+            });
+        }
+    }
+    public record ComparatorClickSoundMessage(float comparatorClickSound) implements CustomPacketPayload {
+
+        // Identificatore univoco del pacchetto
+        public static final Type<ComparatorClickSoundMessage> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(BiomesOfCataclysms.MODID, "update_comparatorclick_sound"));
+
+        // StreamCodec ottimizzato usando ByteBufCodecs offerti da NeoForge/Minecraft
+        public static final StreamCodec<RegistryFriendlyByteBuf, ComparatorClickSoundMessage> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.FLOAT, ComparatorClickSoundMessage::comparatorClickSound,
+                ComparatorClickSoundMessage::new
+        );
+
+        @Override
+        public Type<ComparatorClickSoundMessage> type() {
+            return TYPE;
+        }
+
+        // Gestione della ricezione del pacchetto sul Client
+        public static void handleData(final ComparatorClickSoundMessage message, final IPayloadContext context) {
+            // Ci assicuriamo che il pacchetto venga processato solo lato Client
+            if (context.flow() != PacketFlow.CLIENTBOUND) return;
+
+            context.enqueueWork(() -> {
+                // Settiamo la variabile sul client con l'int ricevuto
+                clientData.soundData.comparatorClickSound = message.comparatorClickSound();
+            }).exceptionally(e -> {
+                context.connection().disconnect(Component.literal("Errore durante la sincronizzazione audio: " + e.getMessage()));
                 return null;
             });
         }

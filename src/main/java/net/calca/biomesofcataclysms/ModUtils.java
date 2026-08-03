@@ -22,6 +22,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.biome.Biome;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -166,23 +167,66 @@ public class ModUtils {
 
     public static void playLocalErrorSound(Player player){
         if (player == null) return;
-        player.playNotifySound(
-                SoundEvents.BEACON_DEACTIVATE, // suono
-                SoundSource.MASTER,                 // categoria audio
-                1F,                               // volume
-                0.4F                                // pitch
-        );
+        playLocalBeaconDeactivateSound((ServerPlayer) player, 0.4F);
 
     }
     public static void playLocalBiomeAffectedSound(Player player){
         if (player == null) return;
-        player.playNotifySound(
-                SoundEvents.WITHER_DEATH,
-                SoundSource.MASTER,
-                0.4F,
-                0.6F
-        );
+        playLocalWitherDeathSound((ServerPlayer) player, 0.6F);
 
+    }
+
+    /**
+     * Esclusivamente su lato server
+     * La variabile pitch deve essere solo il decimale che sta dopo. Nel client il suono viene ricostruito
+     * facendo X.pitch
+     */
+    public static void playLocalNoteBlockSound(ServerPlayer player, float pitch){
+        PacketDistributor.sendToPlayer(player, new PersistentData.NoteBlockSoundMessage(pitch));
+    }
+    /**
+     * Esclusivamente su lato server
+     * La variabile pitch deve essere solo il decimale che sta dopo. Nel client il suono viene ricostruito
+     * facendo X.pitch
+     */
+    public static void playGlobalNoteBlockSound(float pitch){
+        PacketDistributor.sendToAllPlayers(new PersistentData.NoteBlockSoundMessage(pitch));
+    }
+
+
+    public static void playLocalWitherSpawnSound(ServerPlayer player, float pitch){
+        PacketDistributor.sendToPlayer(player, new PersistentData.WitherSpawnSoundMessage(pitch));
+    }
+    public static void playGlobalWitherSpawnSound(float pitch){
+        PacketDistributor.sendToAllPlayers(new PersistentData.WitherSpawnSoundMessage(pitch));
+    }
+
+    public static void playLocalWitherDeathSound(ServerPlayer player, float pitch){
+        PacketDistributor.sendToPlayer(player, new PersistentData.WitherDeathSoundMessage(pitch));
+    }
+    public static void playGlobalWitherDeathSound(float pitch){
+        PacketDistributor.sendToAllPlayers(new PersistentData.WitherDeathSoundMessage(pitch));
+    }
+
+    public static void playLocalBellResonateSound(ServerPlayer player, float pitch){
+        PacketDistributor.sendToPlayer(player, new PersistentData.BellResonateSoundMessage(pitch));
+    }
+    public static void playGlobalBellResonateSound(float pitch){
+        PacketDistributor.sendToAllPlayers(new PersistentData.BellResonateSoundMessage(pitch));
+    }
+
+    public static void playLocalBeaconDeactivateSound(ServerPlayer player, float pitch){
+        PacketDistributor.sendToPlayer(player, new PersistentData.BeaconDeactivateSoundMessage(pitch));
+    }
+    public static void playGlobalBeaconDeactivateSound(float pitch){
+        PacketDistributor.sendToAllPlayers(new PersistentData.BeaconDeactivateSoundMessage(pitch));
+    }
+
+    public static void playLocalComparatorClickSound(ServerPlayer player, float pitch){
+        PacketDistributor.sendToPlayer(player, new PersistentData.ComparatorClickSoundMessage(pitch));
+    }
+    public static void playGlobalComparatorClickSound(float pitch){
+        PacketDistributor.sendToAllPlayers(new PersistentData.ComparatorClickSoundMessage(pitch));
     }
 
     public static String decodeCataclysmFromEnum(AllCataclysms allCataclysms){

@@ -89,8 +89,20 @@ public class ClientDataAccessPoint {
 
     public static class SoundData{
         public boolean wasInBloodMoonEvent = false;
-        public int delaySound1 = 0; // Il suono di quando si entra in un bioma con luna di sangue
-        public int delaySound2 = 0; // Il suono di quando si esce da un bioma con luna di sangue
+        public boolean enteringBloodMoonSound = false;
+        public boolean exitingBloodMoonSound = false;
+        public int delayEnteringBloodMoonSound = 0; // Il suono di quando si entra in un bioma con luna di sangue
+        public int delayExitingBloodMoonSound = 0; // Il suono di quando si esce da un bioma con luna di sangue
+
+        //Impostando un numero diverso da 0, si attiverà il suono noteBlock. Il pitch del suono è impostato a 0.x, dove
+        //x = valore di questa variabile.
+        public float noteBlockSound = 0;
+        public float witherSpawnSound = 0;
+        public float witherDeathSound = 0;
+        public float bellResonateSound = 0;
+
+        public float beaconDeactivateSound = 0;
+        public float comparatorClickSound = 0;
     }
 
     // ==========================================

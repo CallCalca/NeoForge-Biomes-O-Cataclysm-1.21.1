@@ -3,6 +3,7 @@ package net.calca.biomesofcataclysms.management.client;
 import net.calca.biomesofcataclysms.ModUtils;
 import net.calca.biomesofcataclysms.cataclysm.AllCataclysms;
 import net.calca.biomesofcataclysms.cataclysm.eternaleclipse.EternalEclipseStage;
+import net.calca.biomesofcataclysms.data.client.ClientDataAccessPoint;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
@@ -14,53 +15,75 @@ import static net.calca.biomesofcataclysms.data.client.ClientDataAccessPoint.cli
 
 public class ClientSoundManager {
     public static void tick(ClientTickEvent.Post event){
+        ClientDataAccessPoint.SoundData soundData = clientData.soundData;
 
         //Se non è ETERNAL ECLIPSE, non si attiva
-        if (!(ModUtils.decodeCataclysmFromString(clientData.mapData.cataclysm) == AllCataclysms.ETERNAL_ECLIPSE)) return;
-
-        boolean shouldPlayEnteringBloodMoon = false;
-        boolean shouldPlayExitingBloodMoon = false;
-
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null && mc.player != null) {
-            //Se il giocatore è attualmente dentro ad un bioma colpito dall'Eclisse, e la bloodMoonEvent è attivo, allora play the sound Entering
+        if ((ModUtils.decodeCataclysmFromString(clientData.mapData.cataclysm) == AllCataclysms.ETERNAL_ECLIPSE)){
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null && mc.player != null) {
+                //Se il giocatore è attualmente dentro ad un bioma colpito dall'Eclisse, e la bloodMoonEvent è attivo, allora play the sound Entering
                 if ((clientData.mapData.deletedBiomes.contains(ModUtils.getBiomeID(mc.level, mc.player.getOnPos()))
                         && EternalEclipseStage.isBloodMoonEventActive(clientData.skyData.bloodMoonEvents)
-                        && !clientData.soundData.wasInBloodMoonEvent)){
-                    shouldPlayEnteringBloodMoon = true;
-                    clientData.soundData.wasInBloodMoonEvent = true;
-            //Altrimenti se è stato suonato in precedenza il suono Entering, e rather Non c'è più l'evento di bloodMoon Attivo, o
+                        && !soundData.wasInBloodMoonEvent)){
+                    soundData.enteringBloodMoonSound = true;
+                    soundData.wasInBloodMoonEvent = true;
+                    //Altrimenti se è stato suonato in precedenza il suono Entering, e rather Non c'è più l'evento di bloodMoon Attivo, o
                     //il giocatore non è piu in bioma cancellato, suona il suono Exiting
-                }else if (clientData.soundData.wasInBloodMoonEvent
+                }else if (soundData.wasInBloodMoonEvent
                         && (!EternalEclipseStage.isBloodMoonEventActive(clientData.skyData.bloodMoonEvents)
                         || !clientData.mapData.deletedBiomes.contains(ModUtils.getBiomeID(mc.level, mc.player.getOnPos())))){
-                    shouldPlayExitingBloodMoon = true;
-                    clientData.soundData.wasInBloodMoonEvent = false;
-            }
-
-            if (shouldPlayEnteringBloodMoon){
-                if (clientData.soundData.delaySound1 <= 0){
-                    playEnteringBloodMoonSound();
-                    clientData.soundData.delaySound1 = 300;
-                    shouldPlayEnteringBloodMoon = false;
+                    soundData.exitingBloodMoonSound = true;
+                    soundData.wasInBloodMoonEvent = false;
                 }
-            }
-            if (shouldPlayExitingBloodMoon){
-                if (clientData.soundData.delaySound2 <= 0){
-                    playExitingBloodMoonSound();
-                    clientData.soundData.delaySound2 = 80;
-                    shouldPlayExitingBloodMoon = false;
+
+                if (soundData.enteringBloodMoonSound){
+                    if (soundData.delayEnteringBloodMoonSound <= 0){
+                        playEnteringBloodMoonSound();
+                        soundData.delayEnteringBloodMoonSound = 300;
+                        soundData.enteringBloodMoonSound = false;
+                    }
                 }
+                if (soundData.exitingBloodMoonSound){
+                    if (soundData.delayExitingBloodMoonSound <= 0){
+                        playExitingBloodMoonSound();
+                        soundData.delayExitingBloodMoonSound = 80;
+                        soundData.exitingBloodMoonSound = false;
+                    }
+                }
+                soundData.delayEnteringBloodMoonSound--;
+                soundData.delayExitingBloodMoonSound--;
             }
-
-            clientData.soundData.delaySound1--;
-            clientData.soundData.delaySound2--;
-
         }
+        
+            if (soundData.noteBlockSound > 0){
+                playNoteBlockSound(soundData.noteBlockSound);
+                soundData.noteBlockSound = 0;
+            }
+            if (soundData.witherSpawnSound > 0){
+                playWitherSpawnSound(soundData.witherSpawnSound);
+                soundData.witherSpawnSound = 0;
+            }
+            if (soundData.witherDeathSound > 0){
+                playWitherDeathSound(soundData.witherDeathSound);
+                soundData.witherDeathSound = 0;
+            }
+            if (soundData.bellResonateSound > 0){
+                playBellResonateSound(soundData.bellResonateSound);
+                soundData.bellResonateSound = 0;
+            }
+            if (soundData.beaconDeactivateSound > 0){
+                playBeaconDeactivateSound(soundData.beaconDeactivateSound);
+                soundData.beaconDeactivateSound = 0;
+            }
+            if (soundData.comparatorClickSound > 0){
+                playComparatorClickSound(soundData.comparatorClickSound);
+                soundData.comparatorClickSound = 0;
+            }
+
 
     }
 
-    public static void playEnteringBloodMoonSound() {
+    private static void playEnteringBloodMoonSound() {
         // Verifica di sicurezza per eseguire il codice solo lato Client
         if (FMLEnvironment.dist == Dist.CLIENT) {
 
@@ -76,8 +99,7 @@ public class ClientSoundManager {
             Minecraft.getInstance().getSoundManager().play(sound);
         }
     }
-
-    public static void playExitingBloodMoonSound() {
+    private static void playExitingBloodMoonSound() {
         if (FMLEnvironment.dist == Dist.CLIENT) {
 
             SimpleSoundInstance sound = SimpleSoundInstance.forUI(
@@ -88,6 +110,37 @@ public class ClientSoundManager {
 
             Minecraft.getInstance().getSoundManager().play(sound);
         }
+    }
+
+    private static void playNoteBlockSound(float pitch){
+        Minecraft.getInstance().getSoundManager().play(
+            SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), pitch, 1.0F)
+        );
+    }
+    private static void playWitherSpawnSound(float pitch){
+        Minecraft.getInstance().getSoundManager().play(
+            SimpleSoundInstance.forUI(SoundEvents.WITHER_SPAWN, pitch, 0.3F)
+        );
+    }
+    private static void playWitherDeathSound(float pitch){
+        Minecraft.getInstance().getSoundManager().play(
+            SimpleSoundInstance.forUI(SoundEvents.WITHER_DEATH, pitch, 0.3F)
+        );
+    }
+    private static void playBellResonateSound(float pitch){
+        Minecraft.getInstance().getSoundManager().play(
+            SimpleSoundInstance.forUI(SoundEvents.WITHER_SPAWN, pitch, 1.0F)
+        );
+    }
+    private static void playBeaconDeactivateSound(float pitch){
+        Minecraft.getInstance().getSoundManager().play(
+            SimpleSoundInstance.forUI(SoundEvents.BEACON_DEACTIVATE, pitch, 1.0F)
+        );
+    }
+    private static void playComparatorClickSound(float pitch){
+        Minecraft.getInstance().getSoundManager().play(
+            SimpleSoundInstance.forUI(SoundEvents.COMPARATOR_CLICK, pitch, 0.6F)
+        );
     }
 
 }
