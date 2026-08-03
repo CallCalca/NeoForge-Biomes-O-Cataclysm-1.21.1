@@ -95,16 +95,12 @@ public class ServerEvents {
                     if (!(seconds % 2 == 0)) {
                         if (variables.difficulty < 4){
                             float pitch = (float) (((10 - seconds) - 1) * 0.06);
-                            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                                player.playNotifySound(SoundEvents.COMPARATOR_CLICK, SoundSource.MASTER, 0.6F, 0.6F + pitch);
-                            }
+                            ModUtils.playGlobalComparatorClickSound(0.6F + pitch);
                         }
                     } else {
                         if (variables.difficulty < 4){
                             float pitch = (float) (((10 - seconds) - 2) * 0.08);
-                            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                                player.playNotifySound(SoundEvents.COMPARATOR_CLICK, SoundSource.MASTER, 0.6F, 0.4F + pitch);
-                            }
+                            ModUtils.playGlobalComparatorClickSound(0.4F + pitch);
                         }
                     }
                 } else {
@@ -337,14 +333,7 @@ public class ServerEvents {
                 for (ServerLevel level : server.getAllLevels()) {
                     ModUtils.sendChatMessage(level, Component.translatable("command.biomesofcataclysms.endOfGracePeriod")
                             .withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)); //Starting
-                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                        player.playNotifySound(
-                                SoundEvents.NOTE_BLOCK_BASS.value(), // suono
-                                SoundSource.MASTER,                 // categoria audio
-                                1F,                                 // volume
-                                0.8F                                // pitch
-                        );
-                    }
+                    ModUtils.playGlobalNoteBlockSound(0.8F);
                 }
             }
             globalVars.graceCheckHappen = true;
@@ -698,7 +687,7 @@ public class ServerEvents {
                                 .withStyle(ChatFormatting.GOLD),
                         false
                 );
-
+                ModUtils.playGlobalNoteBlockSound(0.7F);
                 level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
             }else if (event.getState().is(Blocks.GRASS_BLOCK)){
                 String target = Biomes.PLAINS.location().toString();
@@ -712,7 +701,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.DIRT)) {
                 String target = Biomes.RIVER.location().toString();
@@ -726,7 +715,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.NETHERRACK)) {
                 String target = Biomes.NETHER_WASTES.location().toString();
@@ -740,7 +729,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.SOUL_SAND)) {
                 String target = Biomes.SOUL_SAND_VALLEY.location().toString();
@@ -754,7 +743,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.END_STONE)) {
                 String target = Biomes.THE_END.location().toString();
@@ -768,7 +757,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.JUNGLE_LOG)) {
                 String target = Biomes.JUNGLE.location().toString();
@@ -782,7 +771,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.ACACIA_LOG)) {
                 String target = Biomes.SAVANNA.location().toString();
@@ -796,7 +785,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.SPRUCE_LOG)) {
                 String target = Biomes.OLD_GROWTH_PINE_TAIGA.location().toString();
@@ -810,7 +799,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.PRISMARINE)) {
                 String target = Biomes.OCEAN.location().toString();
@@ -824,7 +813,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.ICE)) {
                 String target = Biomes.COLD_OCEAN.location().toString();
@@ -838,7 +827,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.PACKED_ICE)) {
                 String target = Biomes.LUKEWARM_OCEAN.location().toString();
@@ -852,7 +841,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             } else if (event.getState().is(Blocks.SCULK)) {
                 String target = Biomes.DEEP_DARK.location().toString();
@@ -866,7 +855,7 @@ public class ServerEvents {
                         false
                 );
 
-                level.playSound(null, event.getPos(), SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 1.0f, 0.7f);
+                ModUtils.playLocalWitherSpawnSound((ServerPlayer) event.getPlayer(), 0.7F);
 
             }
         }

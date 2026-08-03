@@ -38,25 +38,13 @@ public class ModeBranchCommands extends ModCommandsCommon {
             ModUtils.sendChatMessage(world,
                     Component.translatable("command.biomesofcataclysms.setModeTo", modeToString)
                             .withStyle(ChatFormatting.GREEN));
-            for (ServerPlayer players : world.players()){
-                players.playNotifySound(
-                        SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                        SoundSource.MASTER,                 // categoria audio
-                        1F,                               // volume
-                        1.4F                                // pitch
-                );
-            }
+            ModUtils.playGlobalNoteBlockSound(1.4F);
         }else{
             MutableComponent modeToString = decodeModeToString(variables).withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
             ModUtils.sendChatMessage(world,
                     Component.translatable("command.biomesofcataclysms.modeAlreadySet", modeToString)
                             .withStyle(ChatFormatting.YELLOW));
-            Objects.requireNonNull(arguments.getSource().getPlayer()).playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(arguments.getSource().getPlayer(), 0.4F);
         }
 
         return 0;
@@ -76,25 +64,13 @@ public class ModeBranchCommands extends ModCommandsCommon {
             ModUtils.sendChatMessage(world,
                     Component.translatable("command.biomesofcataclysms.setModeTo", modeToString)
                             .withStyle(ChatFormatting.GREEN));
-            for (ServerPlayer players : world.players()){
-                players.playNotifySound(
-                        SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                        SoundSource.MASTER,                 // categoria audio
-                        1F,                               // volume
-                        1.4F                                // pitch
-                );
-            }
+            ModUtils.playGlobalNoteBlockSound(1.4F);
         }else{
             MutableComponent modeToString = decodeModeToString(variables).withStyle(ChatFormatting.RED, ChatFormatting.BOLD);
             ModUtils.sendChatMessage(world,
                     Component.translatable("command.biomesofcataclysms.modeAlreadySet", modeToString)
                             .withStyle(ChatFormatting.YELLOW));
-            Objects.requireNonNull(arguments.getSource().getPlayer()).playNotifySound(
-                    SoundEvents.NOTE_BLOCK_PLING.value(), // suono
-                    SoundSource.MASTER,                 // categoria audio
-                    1F,                               // volume
-                    0.4F                                // pitch
-            );
+            ModUtils.playLocalNoteBlockSound(arguments.getSource().getPlayer(), 0.4F);
         }
 
         return 0;
